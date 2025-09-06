@@ -1,0 +1,42 @@
+name: Assistant Auto Merge
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ main ]
+    paths-ignore: ['README.md']
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR is assistant branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) core.setFailed('Not a pull request');
+            if (!pr.head.ref.startsWith('assistant/')) core.setFailed('Not an assistant PR');
+            return;
+
+      - name: Wait for required checks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const sha = pr.head.sha;
+            // Poll checks for a short while
+            for (let i = 0; i < 12; i++) {
+              const checks = await github.rest.checks.listForRef({ owner: context.repo.owner, repo: context.repo.repo, ref: sha });
+              const runs = checks.data.check_runs;
+              if (runs.length > 0 && runs.every(r => r.conclusion === 'success')) return;
+              await new Promise(r => setTimeout(r, 5000));
+            }
+            core.setFailed('Checks did not succeed in time');
+
+      - name: Merge PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ASSISTANT_MERGE_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.pulls.merge({ owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, merge_method: 'squash' });

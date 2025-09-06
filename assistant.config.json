@@ -1,0 +1,7 @@
+{
+  "autonomyEnabled": true,
+  "allowedActions": ["edit_files", "run_tests", "create_branch", "open_pr", "build"],
+  "maxLinesPerChange": 200,
+  "autoMergeOnGreen": true,
+  "notifyChannel": "pull-request"
+}

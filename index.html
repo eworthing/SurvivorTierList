@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survivor Tier Ranking Pro</title>
+
+    <!-- PWA Meta -->
+    <meta name="description" content="The ultimate family-friendly Survivor contestant tier ranking experience" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Survivor Tiers" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Manifest & icons served from /public -->
+    <link rel="manifest" href="/manifest.json" />
+  <!-- Icons provided via manifest URLs -->
+
+    <!-- Survivor data injected globally -->
+    <link rel="preload" href="/survivor-data.js" as="script" />
+    <script src="/survivor-data.js"></script>
+
+    <!-- Tailwind via CDN (kept for simplicity) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      @media (display-mode: standalone) {
+        body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/SurvivorTierListUnifiedApp.tsx"></script>
+  </body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+  </html>
