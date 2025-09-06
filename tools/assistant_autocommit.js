@@ -7,10 +7,15 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-const root = path.resolve(new URL(import.meta.url).pathname, '..', '..');
+// Use process.cwd() so the hook can run from repo root regardless of ESM URL quirks
+const root = process.cwd();
 
 function run(cmd) {
-  return execSync(cmd, { cwd: root, stdio: 'pipe' }).toString().trim();
+  try {
+    return execSync(cmd, { cwd: root, stdio: 'pipe' }).toString().trim();
+  } catch (e) {
+    return '';
+  }
 }
 
 const msg = process.argv.slice(2).join(' ') || 'assistant: automated commit';
