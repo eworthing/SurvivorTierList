@@ -1,7 +1,47 @@
 {
   "autonomyEnabled": true,
+  "allowedActions": [
+    "edit_files",
+    "run_tests",
+    "create_branch",
+    "open_pr",
+    "build",
+    "git_commit",
+    "git_push"
+  ],
+  "maxLinesPerChange": 200,
+  "autoMergeOnGreen": true,
+  "notifyChannel": "pull-request",
+  "autoCommitOnSignificantChanges": true,
+  "autoCommitOnBreakingChanges": true,
+  "autoCommitThresholdLines": 50
+}
+{
+  "autonomyEnabled": true,
+  "allowedActions": [
+    "edit_files",
+    "run_tests",
+    "create_branch",
+    "open_pr",
+    "build",
+    "git_commit",
+    "git_push"
+  ],
+  "maxLinesPerChange": 200,
+  "autoMergeOnGreen": true,
+  "notifyChannel": "pull-request",
+  "autoCommitOnSignificantChanges": true,
+  "autoCommitOnBreakingChanges": true,
+  "autoCommitThresholdLines": 50
+}
+{
+  "autonomyEnabled": true,
   "allowedActions": ["edit_files", "run_tests", "create_branch", "open_pr", "build"],
   "maxLinesPerChange": 200,
   "autoMergeOnGreen": true,
   "notifyChannel": "pull-request"
 }
+  "allowedActions": ["edit_files", "run_tests", "create_branch", "open_pr", "build", "git_commit", "git_push"],
+  "autoCommitOnSignificantChanges": true,
+  "autoCommitOnBreakingChanges": true,
+  "autoCommitThresholdLines": 50

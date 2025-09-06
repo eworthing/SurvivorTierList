@@ -1,6 +1,7 @@
 import React from 'react';
 import useContestantCardInteractions from '../hooks/useContestantCardInteractions';
 import { useDraggable } from '@dnd-kit/core';
+import { motion } from 'framer-motion';
 import type { Contestant } from '../types';
 
 type Props = {
@@ -80,6 +81,10 @@ const ContestantCard = React.memo(function ContestantCard({
   // handlers and interactive state are provided by the interactions hook
 
   return (
+    <motion.div
+      animate={isSettling ? { y: [0, -8, 0] } : { y: 0 }}
+      transition={isSettling ? { duration: 0.42, ease: 'easeOut' } : { duration: 0 }}
+    >
     <div
       role="button"
       tabIndex={0}
@@ -196,7 +201,8 @@ const ContestantCard = React.memo(function ContestantCard({
           </button>
         </div>
       )}
-    </div>
+  </div>
+  </motion.div>
   );
 });
 

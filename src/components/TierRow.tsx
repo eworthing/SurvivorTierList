@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { Contestant, TierConfigEntry } from '../types';
 import { useUIStore } from '../stores/uiStore';
 import ContestantCard from './ContestantCard';
+import { motion } from 'framer-motion';
 
 interface TierRowProps {
   tierName: string;
@@ -144,7 +145,7 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
         aria-label={`${tierConfig.name} tier drop zone. Contains ${contestants.length} contestants.`}
         data-tier-name={tierName}
       >
-  <div className={`flex flex-wrap gap-3 relative min-h-[64px] ${isJostling ? 'tier-jostle' : ''}`}>
+  <motion.div animate={isJostling ? { y: [0, -6, 0] } : { y: 0 }} transition={isJostling ? { duration: 0.42 } : { duration: 0 }} className={`flex flex-wrap gap-3 relative min-h-[64px] ${isJostling ? 'tier-jostle' : ''}`}>
           {contestants.length === 0 && (
             <div
               className="absolute inset-0 flex items-center justify-center text-center text-slate-500/70 italic pointer-events-none px-2"
@@ -172,7 +173,7 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
               </div>
             );
           })}
-        </div>
+  </motion.div>
       </div>
     </div>
   );
