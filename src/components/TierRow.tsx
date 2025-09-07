@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { Contestant, TierConfigEntry } from '../types';
 import { useUIStore } from '../stores/uiStore';
 import ContestantCard from './ContestantCard';
@@ -140,26 +141,35 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
               {tierName === 'S' ? 'Who is god-tier?' : `Drop ${tierConfig.name} picks here...`}
             </div>
           )}
-          {contestants.map((contestant) => {
-            const highlight = highlightIds.includes(contestant.id);
+          {(() => {
+            const contestantIds = contestants.map(c => c.id);
             return (
-              <div key={contestant.id} className={highlight ? 'animate-pulse ring-2 ring-sky-400 rounded-lg' : ''}>
-                <ContestantCard
-                  contestant={contestant}
-                  showStats={showStats}
-                  onDragStart={onDragStart}
-                  onDragEnd={onDragEnd}
-                  isDragging={draggedContestant === contestant.id}
-                  quickRankMode={quickRankMode}
-                  onQuickRank={onQuickRank}
-                  onSelect={onSelect}
-                  isSelected={selectedContestant?.id === contestant.id}
-                  onDominantColor={onDominantColor}
-                  onStackForCompare={onStackForCompare}
-                />
-              </div>
+              <SortableContext items={contestantIds} strategy={verticalListSortingStrategy}>
+                {contestants.map((contestant, idx) => {
+                  const highlight = highlightIds.includes(contestant.id);
+                  return (
+                    <div key={contestant.id} className={highlight ? 'animate-pulse ring-2 ring-sky-400 rounded-lg' : ''}>
+                      <ContestantCard
+                        contestant={contestant}
+                        showStats={showStats}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        isDragging={draggedContestant === contestant.id}
+                        quickRankMode={quickRankMode}
+                        onQuickRank={onQuickRank}
+                        onSelect={onSelect}
+                        isSelected={selectedContestant?.id === contestant.id}
+                        onDominantColor={onDominantColor}
+                        onStackForCompare={onStackForCompare}
+                        index={idx}
+                        tierName={tierName}
+                      />
+                    </div>
+                  );
+                })}
+              </SortableContext>
             );
-          })}
+          })()}
   </motion.div>
       </div>
     </div>

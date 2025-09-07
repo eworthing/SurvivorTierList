@@ -1,3 +1,4 @@
+// SurvivorTierListUnifiedApp root component
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import Modal from './components/Modal';
@@ -28,9 +29,10 @@ import { usePWA } from './hooks/usePWA';
 // Configuration
 import { THEMES } from './config/themes';
 import { DEFAULT_TIER_CONFIG } from './config/tierDefaults';
-import { deepClone, createRng } from './utils';
+import { createRng } from './utils'; // single import (deduplicated)
 import APP_ANIMATIONS from './styles/animations';
 import { setDragAccentColor } from './stores/uiStore';
+import { MESSAGES } from './constants/messages';
 import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
@@ -66,13 +68,23 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   const idleTimerRef = useRef<number | null>(null);
   // Session-only snapshot (not persisted)
   const snapshotRef = useRef<{ tiers: Record<string, Contestant[]> } | null>(null);
-  const [hasSnapshot, setHasSnapshot] = useState(false);
+  // derive snapshot presence instead of storing redundant state
 
   const pushToast = useCallback((message: string) => {
     const id = Date.now() + Math.floor(rngRef.current() * 1000);
     setToasts(prev => [...prev, { id, message, ttl: 3500 }]);
   }, []);
   const removeToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
+
+  // Listen for broadcast notification events (decoupled modules can trigger toasts)
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { message?: string } | undefined;
+      if (detail?.message) pushToast(detail.message);
+    };
+    window.addEventListener('tierlist:notify', handler as EventListener);
+    return () => window.removeEventListener('tierlist:notify', handler as EventListener);
+  }, [pushToast]);
 
   // Custom hooks for complex functionality
   const {
@@ -90,6 +102,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     handleQuickRank,
   setDraggedOverTier,
   clearTier,
+  reorderWithin,
     setTiersFromLoad
   } = useTierOperations({
     currentContestants,
@@ -120,7 +133,8 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     showStatsModal,
     showComparisonModal,
     closeModal,
-    closeVideoModal
+    closeVideoModal,
+    confirm
   } = useModalManagement();
 
   
@@ -197,20 +211,26 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   React.useEffect(() => {
     const saved = loadFromLocal();
     if (!saved) return;
-    // Only auto-restore if same group; else offer prompt
     if (saved.group === selectedGroupName) {
       setTierConfig(saved.tierConfig);
       setTiersFromLoad(saved.tiers, true);
       if (saved.theme && THEMES[saved.theme]) setCurrentTheme(saved.theme);
     } else {
-      // Basic prompt without social features
-      const ok = window.confirm(`Restore saved ranking for group "${saved.group}"?`);
-      if (ok) {
-        if (contestantGroups[saved.group]) setSelectedGroupName(saved.group);
-        setTierConfig(saved.tierConfig);
-        setTiersFromLoad(saved.tiers, true);
-        if (saved.theme && THEMES[saved.theme]) setCurrentTheme(saved.theme);
-      }
+      // Defer confirm to next tick so initial paint happens first
+      setTimeout(() => {
+        confirm({
+          message: `Restore saved ranking for group "${saved.group}"?`,
+          title: 'Restore Ranking',
+          confirmLabel: 'Restore',
+          cancelLabel: 'Ignore'
+        }).then(ok => {
+          if (!ok) return;
+          if (contestantGroups[saved.group]) setSelectedGroupName(saved.group);
+          setTierConfig(saved.tierConfig);
+          setTiersFromLoad(saved.tiers, true);
+          if (saved.theme && THEMES[saved.theme]) setCurrentTheme(saved.theme);
+        });
+      }, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -218,17 +238,18 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   // Manual save/load/export/import handlers
   const handleSave = useCallback(() => {
     const ok = saveToLocal(selectedGroupName, tiers as Record<string, Contestant[]>, currentTheme, tierConfig);
-    if (ok) alert('Ranking saved locally.');
-  }, [saveToLocal, selectedGroupName, tiers, currentTheme, tierConfig]);
+  if (ok) pushToast(MESSAGES.RANKING_SAVED);
+  }, [saveToLocal, selectedGroupName, tiers, currentTheme, tierConfig, pushToast]);
 
   const handleLoad = useCallback(() => {
     const saved = loadFromLocal();
-    if (!saved) return alert('No saved ranking found.');
+  if (!saved) { pushToast(MESSAGES.NO_SAVED_FOUND); return; }
     if (contestantGroups[saved.group]) setSelectedGroupName(saved.group);
     setTierConfig(saved.tierConfig);
     setTiersFromLoad(saved.tiers, true);
     if (saved.theme && THEMES[saved.theme]) setCurrentTheme(saved.theme);
-  }, [loadFromLocal, contestantGroups, setTierConfig, setTiersFromLoad]);
+  pushToast(MESSAGES.RANKING_LOADED);
+  }, [loadFromLocal, contestantGroups, setTierConfig, setTiersFromLoad, pushToast]);
 
   const handleExportJSON = useCallback(() => {
     exportJSON({ group: selectedGroupName, theme: currentTheme, tierConfig, tiers });
@@ -273,8 +294,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 
   // Session snapshot (lightweight alternative to full save)
   const takeSnapshot = useCallback(() => {
-    snapshotRef.current = { tiers: deepClone(tiers) as Record<string, Contestant[]> };
-    setHasSnapshot(true);
+    snapshotRef.current = { tiers: structuredClone(tiers) as Record<string, Contestant[]> };
     pushToast('Snapshot captured');
   }, [tiers, pushToast]);
 
@@ -286,7 +306,6 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 
   const clearSnapshot = useCallback(() => {
     snapshotRef.current = null;
-    setHasSnapshot(false);
     pushToast('Snapshot cleared');
   }, [pushToast]);
 
@@ -460,8 +479,8 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
             <button onClick={handleLoad} className="bg-slate-600 hover:bg-slate-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📂 Load</button>
             <button onClick={handleStatsModal} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📊 Stats</button>
             <button onClick={takeSnapshot} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📸 Snapshot</button>
-            <button onClick={restoreSnapshot} disabled={!hasSnapshot} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">↩️ Restore</button>
-            <button onClick={clearSnapshot} disabled={!hasSnapshot} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🗑 Clear Snap</button>
+            <button onClick={restoreSnapshot} disabled={!snapshotRef.current} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">↩️ Restore</button>
+            <button onClick={clearSnapshot} disabled={!snapshotRef.current} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🗑 Clear Snap</button>
           </div>
           <div className="flex justify-center flex-wrap gap-2 sm:gap-3">
             <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showStats} onChange={() => setShowStats(!showStats)} className="form-checkbox h-5 w-5 text-sky-600 bg-gray-800 border-gray-600 rounded focus:ring-sky-500" />Show Stats</label>
@@ -572,13 +591,35 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
           }}
           onDragEnd={(e: DragEndEvent) => {
             try {
-              // e.over?.id will be like `tier-<name>` from useDroppable
-              const overId = e.over?.id as string | undefined;
+              const activeId = String(e.active?.id || '');
+              const overId = e.over?.id;
+              type UnknownObj = { [k: string]: unknown };
+              const activeDataRaw: unknown = e.active?.data as unknown;
+              let activeData: UnknownObj | null = null;
+              if (activeDataRaw && typeof activeDataRaw === 'object' && 'current' in (activeDataRaw as UnknownObj)) {
+                const tmp = activeDataRaw as UnknownObj;
+                if (tmp.current && typeof tmp.current === 'object') activeData = tmp.current as UnknownObj;
+              }
+
+              // If the active carries sortable data with tierName/index and over is another item id => intra-tier reorder
+              if (activeData && typeof activeData === 'object' && 'tierName' in activeData && typeof activeData.index === 'number' && overId && !String(overId).startsWith('tier-')) {
+                const sourceTier = String(activeData['tierName']);
+                const from = Number(activeData['index']);
+                const toId = String(overId);
+                const to = (tiers[sourceTier] || []).findIndex((c: Contestant) => c.id === toId);
+                if (to >= 0 && typeof reorderWithin === 'function') {
+                  reorderWithin(sourceTier, from, to);
+                  setLastMovedIds([activeId]);
+                  try { setDragAccentColor(null); } catch {}
+                  try { handleDragEndWithClear(); } catch {}
+                  return;
+                }
+              }
+
+              // fallback: drop onto tier zone id like `tier-<name>`
               if (overId && String(overId).startsWith('tier-')) {
                 const tierName = String(overId).replace(/^tier-/, '');
-                const activeId = String(e.active?.id || '');
                 if (activeId) {
-                  // set highlight, perform drop, clear accent
                   setLastMovedIds([activeId]);
                   handleDrop(activeId, tierName);
                   try { setDragAccentColor(null); } catch {}

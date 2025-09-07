@@ -68,6 +68,21 @@ export const useModalManagement = () => {
     showComparisonModal,
     closeModal,
     showVideoModal,
-    closeVideoModal
+    closeVideoModal,
+    confirm: (opts: { message: string; title?: string; confirmLabel?: string; cancelLabel?: string; tone?: 'default' | 'danger'; }) => new Promise<boolean>(resolve => {
+      setModalState({
+        isOpen: true,
+        title: opts.title || 'Confirm',
+        content: {
+          type: 'confirm',
+          message: opts.message,
+          confirmLabel: opts.confirmLabel,
+          cancelLabel: opts.cancelLabel,
+          tone: opts.tone,
+          onResult: (ok: boolean) => resolve(ok)
+        },
+        size: 'default'
+      });
+    })
   };
 };

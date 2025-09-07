@@ -1,9 +1,8 @@
-import { deepClone } from './utils';
 import type { Contestant, Tiers } from './types';
 
 export const moveContestant = (tiers: Tiers, contestantId: string, targetTierName: string): Tiers => {
   if (!contestantId || !targetTierName || typeof tiers !== 'object') return tiers;
-  const newTiers: Tiers = deepClone(tiers as unknown) as Tiers;
+  const newTiers: Tiers = structuredClone(tiers as unknown as Tiers);
 
   let sourceTier: string | null = null;
   let contestant: Contestant | null = null;

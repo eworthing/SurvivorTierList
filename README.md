@@ -30,6 +30,8 @@ Each bullet starts with an uppercase token that can be used by tooling / LLMs fo
 * CLEAR_TIER: Single-tier flush back to Unranked
 * COLLAPSIBLE_UNRANKED: Toggle visibility of unranked pool
 * TOASTS: Ephemeral action feedback system
+* EVENT_NOTIFICATIONS: Decoupled modules dispatch CustomEvent (tierlist:notify) for toasts
+* CONFIRM_MODAL: Non-blocking promise-based confirm dialog (replaces native alert/confirm)
 * PROGRESS_BAR: Ranked / total count with animated bar
 * HIGHLIGHT_LAST_MOVE: Temporary pulse on last moved card
 * S_TIER_CELEBRATION: One-time glow + confetti on first S-tier placement
@@ -162,7 +164,8 @@ Autosave runs on every meaningful change. Manual controls supplement it.
 	* `components/` – UI building blocks
 	* `hooks/` – Encapsulated behaviors & state machines
 	* `config/` – Themes & default tier config
-	* Utility modules – analysis, history manager, tier & export utils
+	* `tiers/` – Consolidated tier manipulation utilities (move, reorder, clear, randomize)
+	* Utility modules – analysis, history manager, export/import utils
 * `test/` – Vitest suites (utilities & history)
 
 ## Notes
@@ -170,6 +173,9 @@ Autosave runs on every meaningful change. Manual controls supplement it.
 * Data injected via `public/survivor-data.js` consumed by `useDataProcessing`.
 * Tailwind via CDN keeps build lean; no PostCSS pipeline required.
 * React 18 automatic JSX runtime enabled.
+* Native `structuredClone` used for history & snapshots (removed custom deepClone util).
+* Promise-based modal confirm replaces blocking `alert` / `confirm` dialogs.
+* Toast system listens to `tierlist:notify` CustomEvents for loosely-coupled feedback.
 
 ## Data Shapes (reference)
 

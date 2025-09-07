@@ -1,6 +1,7 @@
 import React from 'react';
 import useContestantCardInteractions from '../hooks/useContestantCardInteractions';
 import { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
 import { motion } from 'framer-motion';
 import type { Contestant } from '../types';
 
@@ -18,6 +19,8 @@ type Props = {
   onDominantColor?: (hex: string | null) => void; // called during drag hover to set accent
   onWiggleUndo?: (id: string) => void; // called when wiggle gesture detected to undo
   onStackForCompare?: (id: string) => void; // called when held on top of another card
+  index?: number;
+  tierName?: string;
 };
 
 const ContestantCard = React.memo(function ContestantCard({ 
@@ -33,7 +36,9 @@ const ContestantCard = React.memo(function ContestantCard({
   wasConsidered,
   onDominantColor, // removed usage of onDominantColor
   onWiggleUndo,
-  onStackForCompare
+  onStackForCompare,
+  index,
+  tierName
 }: Props) {
   const interactions = useContestantCardInteractions({
     contestant,
@@ -67,7 +72,20 @@ const ContestantCard = React.memo(function ContestantCard({
     setShowTiers,
   } = interactions;
 
-  const {attributes, listeners, setNodeRef} = useDraggable({ id: contestant.id });
+  // call both hooks in stable order; prefer sortable values when provided by a SortableContext
+  const sortable = useSortable({ id: contestant.id, data: { tierName, index } });
+  const draggable = useDraggable({ id: contestant.id });
+  const attributes = sortable?.attributes || draggable.attributes;
+  const listeners = sortable?.listeners || draggable.listeners;
+  const setNodeRef = sortable?.setNodeRef || draggable.setNodeRef;
+  // safe helpers to inspect unknown draggable object without using `any`
+  const drObj: unknown = draggable;
+  const hasProp = (o: unknown, p: string): o is Record<string, unknown> => typeof o === 'object' && o !== null && p in (o as Record<string, unknown>);
+  type TransformShape = { x?: number; y?: number; scale?: number } | null;
+  const maybeTransform: TransformShape = hasProp(drObj, 'transform') ? (drObj as Record<string, unknown>).transform as TransformShape : null;
+  const maybeTransition: string | undefined = hasProp(drObj, 'transition') ? (drObj as Record<string, unknown>).transition as string : undefined;
+  const transform = (sortable?.transform as TransformShape) || maybeTransform || null;
+  const transition = sortable?.transition || maybeTransition || undefined;
 
   // Safely derive optional stats from unknown-typed index signature
   const strategy = typeof contestant.strategy === 'number' || typeof contestant.strategy === 'string' 
@@ -83,7 +101,7 @@ const ContestantCard = React.memo(function ContestantCard({
       animate={isSettling ? { y: [0, -8, 0] } : { y: 0 }}
       transition={isSettling ? { duration: 0.42, ease: 'easeOut' } : { duration: 0 }}
     >
-    <div
+  <div
       role="button"
       tabIndex={0}
       ref={setNodeRef}
@@ -112,7 +130,9 @@ const ContestantCard = React.memo(function ContestantCard({
   `}
       style={{ 
         minHeight: '44px', // iOS accessibility guideline
-        minWidth: '44px' 
+        minWidth: '44px',
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale || 1})` : undefined,
+        transition: transition || undefined,
       }}
       aria-label={`${contestant.name} from Season ${contestant.season}${quickRankMode ? '. Press 1-6 to rank quickly' : ''}${showTiers ? '. Quick rank active - tap a tier' : ''}`}
       title={quickRankMode ? 'Press 1-6 to rank: 1=S, 2=A, 3=B, 4=C, 5=D, 6=F' : `${contestant.name} - Season ${contestant.season}`}
