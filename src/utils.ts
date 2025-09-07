@@ -83,3 +83,24 @@ export const createRng = (seed?: number): (() => number) => {
     return (state - 1) / 2147483646;
   };
 };
+
+// Pick two distinct random items from an array using the provided RNG.
+// Returns a tuple [a, b] or null when the array has fewer than 2 items.
+export const pickRandomPair = <T>(arr: T[], rng: () => number = Math.random): [T, T] | null => {
+  const pool = (arr || []).filter(Boolean);
+  if (pool.length < 2) return null;
+  const i = Math.floor(rng() * pool.length);
+  let j = Math.floor(rng() * pool.length);
+  if (j === i) j = (j + 1) % pool.length;
+  return [pool[i], pool[j]];
+};
+
+// Normalize an optional RNG value to a function returning [0,1).
+export const normalizeRng = (rng?: (() => number) | undefined): (() => number) => {
+  return typeof rng === 'function' ? rng : Math.random;
+};
+
+// Return a number in [min, max) using rng
+export const randomRange = (min: number, max: number, rng: () => number = Math.random): number => {
+  return min + rng() * (max - min);
+};

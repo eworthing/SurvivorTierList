@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deepClone, calculateRankedCount } from '../src/utils.ts';
+import { deepClone, calculateRankedCount, createRng, pickRandomPair } from '../src/utils.ts';
 
 describe('deepClone', () => {
   it('clones plain objects', () => {
@@ -16,6 +16,21 @@ describe('deepClone', () => {
     expect(c).not.toBe(a);
     expect(c[1]).not.toBe(a[1]);
     expect(c).toEqual(a);
+  });
+});
+
+describe('deterministic RNG and pair picking', () => {
+  it('produces deterministic pairs with a seed', () => {
+    const rng1 = createRng(12345);
+    const rng2 = createRng(12345);
+    const arr = ['a', 'b', 'c', 'd', 'e'];
+    const p1 = pickRandomPair(arr, rng1);
+    const p2 = pickRandomPair(arr, rng2);
+    expect(p1).toEqual(p2);
+    // different seed should usually differ
+    const rng3 = createRng(54321);
+    const p3 = pickRandomPair(arr, rng3);
+    expect(p3).not.toEqual(p1);
   });
 });
 

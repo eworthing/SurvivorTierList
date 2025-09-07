@@ -98,7 +98,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   setStartTime,
   onAction: pushToast,
   onReturnToUnranked: (ids) => setConsideredIds(prev => new Set([...Array.from(prev), ...ids]))
-  });
+  , rng: rngRef.current });
 
   const headToHead = useHeadToHead({ contestants: tiers.unranked || [], rng: rngRef.current });
 
@@ -361,13 +361,14 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
       setSTierCelebrated(true);
       // Generate confetti pieces
       const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#38bdf8', '#a78bfa', '#f472b6'];
+      const r = rngRef.current;
       const pieces = Array.from({ length: 24 }).map((_, i) => ({
         id: i,
-        left: rngRef.current() * 100, // percentage
-        delay: rngRef.current() * 0.3,
-        duration: 1.2 + rngRef.current() * 0.8,
-        color: colors[Math.floor(rngRef.current() * colors.length)],
-        size: 6 + rngRef.current() * 10
+        left: Math.round((r() * 100) * 100) / 100, // percentage with 2 decimals
+        delay: Math.round((r() * 0.3) * 1000) / 1000,
+        duration: Math.round((1.2 + r() * 0.8) * 1000) / 1000,
+        color: colors[Math.floor(r() * colors.length)],
+        size: Math.round((6 + r() * 10) * 100) / 100
       }));
       setConfettiPieces(pieces);
       const t = setTimeout(() => setCelebrateSTier(false), 1800);

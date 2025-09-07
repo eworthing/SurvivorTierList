@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Contestant } from '../types';
+import { pickRandomPair, normalizeRng } from '../utils';
 
 export interface HeadToHeadStat {
   id: string;
@@ -22,25 +23,20 @@ export const useHeadToHead = ({ contestants, rng }: UseHeadToHeadOptions) => {
     setStats(prev => prev[id] ? prev : ({ ...prev, [id]: { id, wins: 0, losses: 0 } }));
   }, []);
 
-  const pickRandomPair = useCallback(() => {
-    const pool = contestants.filter(c => !!c); // guard
-    if (pool.length < 2) { setPair(null); return; }
-    const r = typeof rng === 'function' ? rng : Math.random;
-    const i = Math.floor(r() * pool.length);
-    let j = Math.floor(r() * pool.length);
-    if (j === i) j = (j + 1) % pool.length;
-    const a = pool[i];
-    const b = pool[j];
-    setPair([a, b]);
-    ensureStat(a.id); ensureStat(b.id);
+  const pickAndSetRandomPair = useCallback(() => {
+  const r = normalizeRng(rng);
+  const p = pickRandomPair(contestants, r);
+    if (!p) { setPair(null); return; }
+    setPair(p);
+    ensureStat(p[0].id); ensureStat(p[1].id);
   }, [contestants, ensureStat, rng]);
 
   const start = useCallback(() => {
     setIsActive(true);
     setStats({});
     setComparisons(0);
-    pickRandomPair();
-  }, [pickRandomPair]);
+  pickAndSetRandomPair();
+  }, [pickAndSetRandomPair]);
 
   const stop = useCallback(() => {
     setIsActive(false);
@@ -57,13 +53,13 @@ export const useHeadToHead = ({ contestants, rng }: UseHeadToHeadOptions) => {
       [loserId]: { id: loserId, wins: prev[loserId]?.wins || 0, losses: (prev[loserId]?.losses || 0) + 1 }
     }));
     setComparisons(c => c + 1);
-    pickRandomPair();
-  }, [pair, pickRandomPair]);
+  pickAndSetRandomPair();
+  }, [pair, pickAndSetRandomPair]);
 
   const skip = useCallback(() => {
     setComparisons(c => c + 1);
-    pickRandomPair();
-  }, [pickRandomPair]);
+  pickAndSetRandomPair();
+  }, [pickAndSetRandomPair]);
 
   const ranking = useMemo(() => {
     const rows: { contestant: Contestant; score: number; wins: number; losses: number }[] = contestants.map(c => {

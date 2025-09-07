@@ -57,8 +57,10 @@ export const reorderWithinTier = (tiers: Tiers, tierName: string, from: number, 
   return newTiers;
 };
 
+import { normalizeRng } from '../utils';
+
 export const randomizeIntoTiers = (contestants: Contestant[], tierNames: string[], rng?: () => number): Tiers => {
-  const rand = typeof rng === 'function' ? rng : Math.random;
+  const rand = normalizeRng(rng);
   const n = Array.isArray(contestants) ? contestants.length : 0;
   const newTiers: Tiers = {
     ...Object.fromEntries(tierNames.map((name) => [name, []])),
