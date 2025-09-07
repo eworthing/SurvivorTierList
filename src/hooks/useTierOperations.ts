@@ -12,6 +12,7 @@ interface UseTierOperationsProps {
   setStartTime: (time: number) => void;
   onAction?: (description: string) => void; // optional side-effect hook for UI toasts
   onReturnToUnranked?: (ids: string[]) => void; // notify when contestants move back to unranked
+  rng?: () => number;
 }
 
 export const useTierOperations = ({
@@ -20,7 +21,8 @@ export const useTierOperations = ({
   setStats,
   setStartTime,
   onAction,
-  onReturnToUnranked
+  onReturnToUnranked,
+  rng
 }: UseTierOperationsProps) => {
   const [tiers, setTiers] = useState<Record<string, Contestant[]>>({});
   const [history, setHistory] = useState(() => HistoryManager.initHistory({}));
@@ -102,11 +104,11 @@ export const useTierOperations = ({
   }, [currentContestants, saveToHistory, tierNames, setStartTime, onAction]);
 
   const randomizeTiers = useCallback(() => {
-    const newTiers = randomizeIntoTiers(currentContestants, tierNames);
+    const newTiers = randomizeIntoTiers(currentContestants, tierNames, rng);
     setTiers(deepClone(newTiers));
     saveToHistory(newTiers);
     if (onAction) onAction('Randomized tiers');
-  }, [currentContestants, tierNames, saveToHistory, onAction]);
+  }, [currentContestants, tierNames, saveToHistory, onAction, rng]);
 
   const reorderWithin = useCallback((tierName: string, from: number, to: number) => {
     setTiers(prev => {
