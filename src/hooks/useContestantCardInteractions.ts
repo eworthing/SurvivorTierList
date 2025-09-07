@@ -134,11 +134,8 @@ export default function useContestantCardInteractions({
     if (stackTimerRef.current) { clearTimeout(stackTimerRef.current); stackTimerRef.current = null; }
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    try {
-      e.dataTransfer.setData('text/plain', contestant.id);
-      e.dataTransfer.effectAllowed = 'move';
-    } catch {}
+  // dnd-kit provides drag lifecycle via context; for native fallback we keep a simple no-op
+  const handleDragStart = () => {
     if (onDragStart) onDragStart(contestant.id);
     if (onDominantColor && imgSrc) {
       getDominantColorFromImage(imgSrc).then(hex => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initHistory, saveSnapshot, undo, redo, getCurrent } from '../src/historyManager.ts';
-import { moveContestant } from '../src/tierUtils.ts';
+import { moveContestant } from '../src/tiers/index.ts';
 
 describe('history + move integration', () => {
   it('saves snapshots, moves contestant, and allows undo/redo', () => {

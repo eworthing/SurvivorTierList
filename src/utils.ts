@@ -2,6 +2,11 @@ import type { Tiers } from './types';
 
 export const deepClone = <T>(obj: T): T => {
   try {
+    // Prefer structuredClone when available (preserves more types)
+    const maybe = globalThis as unknown as { structuredClone?: (v: unknown) => unknown };
+    if (typeof maybe.structuredClone === 'function') {
+      return maybe.structuredClone(obj) as T;
+    }
     return JSON.parse(JSON.stringify(obj));
   } catch {
     // Fallback for non-serializable objects
@@ -64,4 +69,17 @@ export const getDominantColorFromImage = async (src: string): Promise<string | n
   } catch {
     return null;
   }
+};
+
+// Small seeded RNG factory. If no seed is provided, returns Math.random.
+// Uses a 32-bit Lehmer LCG when seeded for deterministic sequences.
+export const createRng = (seed?: number): (() => number) => {
+  if (typeof seed !== 'number') return Math.random;
+  // Ensure seed is a positive 32-bit integer
+  let state = Math.abs(Math.floor(seed)) % 2147483647;
+  if (state === 0) state = 1;
+  return () => {
+    state = (state * 16807) % 2147483647;
+    return (state - 1) / 2147483646;
+  };
 };

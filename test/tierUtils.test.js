@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { moveContestant, validateTiersShape } from '../src/tierUtils.ts';
+import { moveContestant, validateTiersShape } from '../src/tiers/index.ts';
 
 describe('moveContestant', () => {
   it('moves a contestant from unranked to S', () => {

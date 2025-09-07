@@ -8,18 +8,11 @@ interface SideQuickDropMenuProps {
   side: Side;
   tierNames: string[];
   tierConfig: TierConfig;
-  onDropToTier: (contestantId: string, tierName: string) => void;
 }
 
-const SideQuickDropMenu: React.FC<SideQuickDropMenuProps> = ({ side, tierNames, tierConfig, onDropToTier }) => {
+const SideQuickDropMenu: React.FC<SideQuickDropMenuProps> = ({ side, tierNames, tierConfig }) => {
   const ordered = ['S','A','B','C','D','F'].filter(t => tierNames.includes(t));
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-
-  const handleDropHtml5 = (e: React.DragEvent, tierName: string) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (id) onDropToTier(id, tierName);
-  };
+  // dnd-kit droppable handles drops
 
   const TierDropButton: React.FC<{ tn: string }> = ({ tn }) => {
     const { isOver, setNodeRef } = useDroppable({ id: `side-${tn}` });
@@ -29,8 +22,7 @@ const SideQuickDropMenu: React.FC<SideQuickDropMenuProps> = ({ side, tierNames, 
         role="button"
         aria-label={`Drop to ${tierConfig[tn]?.name || tn} tier`}
         title={`Drop to ${tierConfig[tn]?.name || tn}`}
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDropHtml5(e, tn)}
+  // dnd-kit handles drop events
         className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-extrabold cursor-pointer select-none border-2 hover:scale-105 transition-transform active:scale-95 ${isOver ? 'scale-110 bg-white/10' : ''}`}
         style={{
           borderColor: tierConfig[tn]?.hexColor || '#94a3b8',

@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -26,20 +28,53 @@ jobs:
       - name: Build PR body
         id: build_body
         run: |
+          # If the assistant summary file exists, use it verbatim (safe-escape percents).
           if [ -f .assistant_autocommit_summary.md ]; then
             body=$(sed 's/%/%%/g' .assistant_autocommit_summary.md | awk '{printf "%s\\n", $0}')
           else
-            body="This PR was opened automatically by the assistant workflow.\n\nBranch: ${GITHUB_REF}\nCommit: ${GITHUB_SHA}\nWorkflow: ${GITHUB_WORKFLOW}"
+            # Ensure we have main to diff against
+            git remote set-head origin -a || true
+            git fetch origin main --depth=1 || git fetch origin main || true
+
+            commits=$(git --no-pager log --pretty=format:"%h %s" origin/main..HEAD || echo "(no commits available)")
+            files=$(git --no-pager diff --name-status origin/main...HEAD || echo "(no file diff available)")
+
+            body="This PR was opened automatically by the assistant workflow.\n\nBranch: ${GITHUB_REF}\nCommit: ${GITHUB_SHA}\nWorkflow: ${GITHUB_WORKFLOW}\n\nCommits:\n${commits}\n\nChanged files:\n${files}"
           fi
+          # Write body to GITHUB_OUTPUT using multiline EOF notation
           echo "body<<EOF" >> $GITHUB_OUTPUT
           printf "%s\n" "$body"
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4
+        id: create_pr
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "assistant: automated changes — ${{ github.ref_name }}"
           body: ${{ steps.build_body.outputs.body }}
           base: main
           labels: assistant, auto-generated
+
+      - name: Post PR summary comment
+        uses: actions/github-script@v6
+        env:
+          PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const exec = require('child_process').execSync;
+            const pr = Number(process.env.PR_NUMBER);
+            let summary = '';
+            if (fs.existsSync('.assistant_autocommit_summary.md')) {
+              summary = fs.readFileSync('.assistant_autocommit_summary.md', 'utf8');
+            } else {
+              try {
+                summary = exec('git show --name-status --pretty=format:"%h %s" -1', { encoding: 'utf8' });
+              } catch (e) {
+                summary = 'No detailed summary available.';
+              }
+            }
+            const body = `Automated test & diff summary (tests passed)\n\n${summary}`;
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr, body });

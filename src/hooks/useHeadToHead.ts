@@ -9,9 +9,10 @@ export interface HeadToHeadStat {
 
 interface UseHeadToHeadOptions {
   contestants: Contestant[]; // source list (typically current unranked pool)
+  rng?: () => number;
 }
 
-export const useHeadToHead = ({ contestants }: UseHeadToHeadOptions) => {
+export const useHeadToHead = ({ contestants, rng }: UseHeadToHeadOptions) => {
   const [isActive, setIsActive] = useState(false);
   const [pair, setPair] = useState<[Contestant, Contestant] | null>(null);
   const [stats, setStats] = useState<Record<string, HeadToHeadStat>>({});
@@ -24,14 +25,15 @@ export const useHeadToHead = ({ contestants }: UseHeadToHeadOptions) => {
   const pickRandomPair = useCallback(() => {
     const pool = contestants.filter(c => !!c); // guard
     if (pool.length < 2) { setPair(null); return; }
-    const i = Math.floor(Math.random() * pool.length);
-    let j = Math.floor(Math.random() * pool.length);
+    const r = typeof rng === 'function' ? rng : Math.random;
+    const i = Math.floor(r() * pool.length);
+    let j = Math.floor(r() * pool.length);
     if (j === i) j = (j + 1) % pool.length;
     const a = pool[i];
     const b = pool[j];
     setPair([a, b]);
     ensureStat(a.id); ensureStat(b.id);
-  }, [contestants, ensureStat]);
+  }, [contestants, ensureStat, rng]);
 
   const start = useCallback(() => {
     setIsActive(true);

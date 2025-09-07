@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Contestant, Tiers, UserStats } from '../types';
 import { deepClone } from '../utils';
+import { moveContestant, clearTier as clearTierHelper, reorderWithinTier, randomizeIntoTiers } from '../tiers';
 import * as HistoryManager from '../historyManager';
 
 interface UseTierOperationsProps {
@@ -45,36 +46,22 @@ export const useTierOperations = ({
   const handleDrop = useCallback((contestantId: string, targetTierName: string) => {
     if (!contestantId || !targetTierName) return;
     setTiers(prevTiers => {
-      const newTiers = deepClone(prevTiers);
-      let sourceTierName: string | null = null;
-      let contestantToMove: Contestant | null = null;
-      
-      for (const [tierName, contestantsRaw] of Object.entries(newTiers)) {
-        const contestants = Array.isArray(contestantsRaw) ? (contestantsRaw as Contestant[]) : [];
-        const idx = contestants.findIndex((c) => c.id === contestantId);
-        if (idx !== -1) {
-          sourceTierName = tierName;
-          contestantToMove = contestants[idx];
-          newTiers[tierName] = [...contestants.slice(0, idx), ...contestants.slice(idx + 1)];
-          break;
-        }
-      }
-      
-      if (!contestantToMove || sourceTierName === targetTierName) return prevTiers;
-      if (!Array.isArray(newTiers[targetTierName])) newTiers[targetTierName] = [];
-      newTiers[targetTierName] = [...newTiers[targetTierName], contestantToMove];
+      const prev = prevTiers as Tiers;
+      const newTiers = moveContestant(prev, contestantId, targetTierName);
+      // If moveContestant returned the original object, assume no-op
+      if (newTiers === prev) return prev;
       saveToHistory(newTiers);
-      if (onAction && contestantToMove) {
-        onAction(`Moved ${contestantToMove.name || 'Contestant'} to ${targetTierName}`);
-      }
-      // Notify when a contestant returns to unranked from a ranked tier
-      if (targetTierName === 'unranked' && sourceTierName && sourceTierName !== 'unranked') {
-        if (onAction) onAction(`${contestantToMove.name || 'Contestant'} returned to unranked`);
-        if (onReturnToUnranked) onReturnToUnranked([contestantToMove.id]);
+
+      // Determine the moved contestant's id presence to infer source/target
+      const moved = Object.values(newTiers).flat().find((c: Contestant) => c.id === contestantId) as Contestant | undefined;
+      if (onAction && moved) onAction(`Moved ${moved.name || 'Contestant'} to ${targetTierName}`);
+      if (targetTierName === 'unranked') {
+        const wasInRanked = Object.values(prev).some((arr) => Array.isArray(arr) && (arr as Contestant[]).some((c) => c.id === contestantId));
+        if (wasInRanked && moved && onReturnToUnranked) onReturnToUnranked([moved.id]);
       }
       return newTiers;
     });
-    setDraggedOverTier(null); 
+    setDraggedOverTier(null);
     setDraggedContestant(null);
   }, [saveToHistory, onAction, onReturnToUnranked]);
 
@@ -115,20 +102,21 @@ export const useTierOperations = ({
   }, [currentContestants, saveToHistory, tierNames, setStartTime, onAction]);
 
   const randomizeTiers = useCallback(() => {
-    const shuffled = deepClone(currentContestants).sort(() => Math.random() - 0.5);
-    const newTiers: Tiers = {
-      ...Object.fromEntries(tierNames.map(name => [name, []])),
-      unranked: []
-    };
-    shuffled.forEach((contestant: Contestant, index: number) => {
-      const tierIndex = Math.floor(index / Math.ceil(shuffled.length / tierNames.length));
-      const tierName = tierNames[Math.min(tierIndex, tierNames.length - 1)];
-      if (newTiers[tierName]) newTiers[tierName].push(contestant);
-    });
+    const newTiers = randomizeIntoTiers(currentContestants, tierNames);
     setTiers(deepClone(newTiers));
     saveToHistory(newTiers);
     if (onAction) onAction('Randomized tiers');
   }, [currentContestants, tierNames, saveToHistory, onAction]);
+
+  const reorderWithin = useCallback((tierName: string, from: number, to: number) => {
+    setTiers(prev => {
+      const prevTiers = prev as Tiers;
+      const next = reorderWithinTier(prevTiers, tierName, from, to);
+      if (next === prevTiers) return prev;
+      saveToHistory(next);
+      return next;
+    });
+  }, [saveToHistory]);
 
   const handleQuickRank = useCallback((contestantId: string, tier: string) => {
     // Determine if unranked would be empty after this move based on current state
@@ -139,14 +127,13 @@ export const useTierOperations = ({
 
   const clearTier = useCallback((tierName: string) => {
     setTiers(prev => {
-      if (!prev[tierName] || prev[tierName].length === 0) return prev;
-      const newTiers = deepClone(prev);
-      const moved = newTiers[tierName];
-      newTiers[tierName] = [];
-      newTiers.unranked = [...(newTiers.unranked || []), ...moved];
+      const prevTiers = prev as Tiers;
+      const { tiers: newTiers, moved } = clearTierHelper(prevTiers, tierName);
+      // if no change, return previous
+      if (newTiers === prevTiers) return prev;
       saveToHistory(newTiers);
       if (onAction) onAction(`Cleared tier ${tierName} (${moved.length} moved to unranked)`);
-      if (onReturnToUnranked && moved.length) onReturnToUnranked(moved.map(c => c.id));
+      if (onReturnToUnranked && moved.length) onReturnToUnranked(moved.map((c: Contestant) => c.id));
       return newTiers;
     });
   }, [saveToHistory, onAction, onReturnToUnranked]);
@@ -166,6 +153,7 @@ export const useTierOperations = ({
     handleQuickRank,
     setDraggedOverTier,
   clearTier,
+  reorderWithin,
     // Allow loading tiers from persisted state and reset history accordingly
     setTiersFromLoad: (loaded: Tiers, resetHistory = true) => {
       setTiers(deepClone(loaded));

@@ -9,7 +9,7 @@ interface TierRowProps {
   tierName: string;
   tierConfig: TierConfigEntry;
   contestants: Contestant[];
-  onDrop: (contestantId: string, tierName: string) => void;
+  // onDrop handled by parent DndContext onDragEnd
   onDragOver: (tierName: string | null) => void;
   isDraggedOver: boolean;
   onAnalyzeTier: (tierName: string, contestants: Contestant[]) => void;
@@ -34,7 +34,6 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
   tierName,
   tierConfig,
   contestants,
-  onDrop,
   onDragOver,
   isDraggedOver,
   onAnalyzeTier,
@@ -52,27 +51,16 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
   celebrateSTier = false
   , dragAccentColor = null, onDominantColor, onStackForCompare
 }) => {
-  const [isJostling, setIsJostling] = React.useState(false);
+  // jostle animation is driven by highlightIds from parent
+  const isJostlingLocal = highlightIds && highlightIds.length > 0;
   const dragAccent = useUIStore(state => state.dragAccentColor);
   const { isOver, setNodeRef } = useDroppable({ id: `tier-${tierName}` });
 
   React.useEffect(() => {
-    if (isOver) onDragOver(tierName); else onDragOver(null);
+  if (isOver) onDragOver(tierName); else onDragOver(null);
   }, [isOver, onDragOver, tierName]);
 
-  const handleDrop = (contestantId: string | null) => {
-    if (!contestantId) return;
-    onDrop(contestantId, tierName);
-    setIsJostling(true);
-    window.setTimeout(() => setIsJostling(false), 420);
-  };
-
-  // HTML5 fallback drop handler
-  const handleDropHtml5 = (e: React.DragEvent) => {
-    e.preventDefault();
-    const contestantId = e.dataTransfer.getData('text/plain');
-    handleDrop(contestantId || null);
-  };
+  // dnd-kit droppable handles drop events via the DndContext onDragEnd in the parent
 
   const handleDragLeave = (e: React.DragEvent) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -90,7 +78,6 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
   return (
     <div
       ref={setNodeRef}
-      onDrop={handleDropHtml5}
       onDragLeave={handleDragLeave}
       className={`
         flex items-stretch rounded-lg shadow-md border-l-8 transition-all duration-300
@@ -145,7 +132,7 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
         aria-label={`${tierConfig.name} tier drop zone. Contains ${contestants.length} contestants.`}
         data-tier-name={tierName}
       >
-  <motion.div animate={isJostling ? { y: [0, -6, 0] } : { y: 0 }} transition={isJostling ? { duration: 0.42 } : { duration: 0 }} className={`flex flex-wrap gap-3 relative min-h-[64px] ${isJostling ? 'tier-jostle' : ''}`}>
+  <motion.div animate={isJostlingLocal ? { y: [0, -6, 0] } : { y: 0 }} transition={isJostlingLocal ? { duration: 0.42 } : { duration: 0 }} className={`flex flex-wrap gap-3 relative min-h-[64px] ${isJostlingLocal ? 'tier-jostle' : ''}`}>
           {contestants.length === 0 && (
             <div
               className="absolute inset-0 flex items-center justify-center text-center text-slate-500/70 italic pointer-events-none px-2"

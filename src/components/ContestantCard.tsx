@@ -62,10 +62,8 @@ const ContestantCard = React.memo(function ContestantCard({
     handleImageError,
     handleMouseEnter,
     handleMouseLeave,
-    handleDragEnter,
-    handleDragLeaveCard,
-    handleDragStart: handleDragStartLocal,
-    handleDragEnd: handleDragEndLocal,
+  handleDragEnter,
+  handleDragLeaveCard,
     setShowTiers,
   } = interactions;
 
@@ -89,11 +87,8 @@ const ContestantCard = React.memo(function ContestantCard({
       role="button"
       tabIndex={0}
       ref={setNodeRef}
-      draggable={!quickRankMode && !isDraggingMobile}
-    onDragStart={handleDragStartLocal}
-    onDragEnd={handleDragEndLocal}
-    {...attributes}
-    {...listeners}
+      {...attributes}
+      {...listeners}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeaveCard}
   onClick={handleClick}
@@ -160,7 +155,7 @@ const ContestantCard = React.memo(function ContestantCard({
       )}
 
       {/* Mobile tier selection overlay */}
-      {showTiers && onQuickRank && (
+  {showTiers && onQuickRank && (
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg">
           <div className="grid grid-cols-2 gap-2 p-2">
             {[

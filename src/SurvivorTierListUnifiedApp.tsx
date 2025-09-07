@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import Modal from './components/Modal';
 import ContestantCard from './components/ContestantCard';
@@ -29,10 +28,10 @@ import { usePWA } from './hooks/usePWA';
 // Configuration
 import { THEMES } from './config/themes';
 import { DEFAULT_TIER_CONFIG } from './config/tierDefaults';
-import { deepClone } from './utils';
+import { deepClone, createRng } from './utils';
 import APP_ANIMATIONS from './styles/animations';
 import { setDragAccentColor } from './stores/uiStore';
-import { DndContext, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -61,6 +60,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   const [consideredIds, setConsideredIds] = useState<Set<string>>(new Set());
   const [confettiPieces, setConfettiPieces] = useState<{ id: number; left: number; delay: number; duration: number; color: string; size: number; }[]>([]);
   const confettiStyleInjectedRef = useRef(false);
+  const rngRef = useRef<() => number>(createRng());
   const [stackSelectedIds, setStackSelectedIds] = useState<string[]>([]);
   const [isIdle, setIsIdle] = useState(false);
   const idleTimerRef = useRef<number | null>(null);
@@ -69,7 +69,8 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   const [hasSnapshot, setHasSnapshot] = useState(false);
 
   const pushToast = useCallback((message: string) => {
-    setToasts(prev => [...prev, { id: Date.now() + Math.random(), message, ttl: 3500 }]);
+    const id = Date.now() + Math.floor(rngRef.current() * 1000);
+    setToasts(prev => [...prev, { id, message, ttl: 3500 }]);
   }, []);
   const removeToast = useCallback((id: number) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
@@ -99,7 +100,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   onReturnToUnranked: (ids) => setConsideredIds(prev => new Set([...Array.from(prev), ...ids]))
   });
 
-  const headToHead = useHeadToHead({ contestants: tiers.unranked || [] });
+  const headToHead = useHeadToHead({ contestants: tiers.unranked || [], rng: rngRef.current });
 
   const { statsContent } = useAchievements(tiers, currentContestants, stats, startTime);
   
@@ -337,13 +338,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     return { rankedCount, totalCount: currentContestants.length };
   }, [currentContestants.length, unrankedContestants.length]);
 
-  // Enhanced drop to capture highlight info
-  const handleDropWithHighlight = useCallback((contestantId: string, tierName: string) => {
-    if (contestantId) setLastMovedIds([contestantId]);
-    handleDrop(contestantId, tierName);
-    // clear drag accent after drop
-    try { setDragAccentColor(null); } catch {}
-  }, [handleDrop]);
+  // DnD onDragEnd will capture destination and invoke handleDrop + highlight
 
   const handleDragEndWithClear = useCallback(() => {
   // clear transient UI store state (stack) then forward drag end
@@ -368,11 +363,11 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
       const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#38bdf8', '#a78bfa', '#f472b6'];
       const pieces = Array.from({ length: 24 }).map((_, i) => ({
         id: i,
-        left: Math.random() * 100, // percentage
-        delay: Math.random() * 0.3,
-        duration: 1.2 + Math.random() * 0.8,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: 6 + Math.random() * 10
+        left: rngRef.current() * 100, // percentage
+        delay: rngRef.current() * 0.3,
+        duration: 1.2 + rngRef.current() * 0.8,
+        color: colors[Math.floor(rngRef.current() * colors.length)],
+        size: 6 + rngRef.current() * 10
       }));
       setConfettiPieces(pieces);
       const t = setTimeout(() => setCelebrateSTier(false), 1800);
@@ -574,7 +569,21 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
               if (id) handleDragStart(id as string);
             } catch {}
           }}
-          onDragEnd={() => {
+          onDragEnd={(e: DragEndEvent) => {
+            try {
+              // e.over?.id will be like `tier-<name>` from useDroppable
+              const overId = e.over?.id as string | undefined;
+              if (overId && String(overId).startsWith('tier-')) {
+                const tierName = String(overId).replace(/^tier-/, '');
+                const activeId = String(e.active?.id || '');
+                if (activeId) {
+                  // set highlight, perform drop, clear accent
+                  setLastMovedIds([activeId]);
+                  handleDrop(activeId, tierName);
+                  try { setDragAccentColor(null); } catch {}
+                }
+              }
+            } catch {}
             // keep existing cleanup behavior
             try { handleDragEndWithClear(); } catch {}
           }}
@@ -586,7 +595,6 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
               tierName={tierName} 
               tierConfig={tierConfig[tierName]} 
               contestants={tiers[tierName] || []} 
-              onDrop={handleDropWithHighlight} 
               onDragOver={setDraggedOverTier} 
               isDraggedOver={draggedOverTier === tierName} 
               dragAccentColor={null}
@@ -671,7 +679,6 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
         side={sideMenuSide}
         tierNames={tierNames}
         tierConfig={tierConfig}
-        onDropToTier={handleDrop}
       />
 
   {/* Head-to-Head Voting Overlay */}
@@ -704,24 +711,12 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 //  Mount the app using React 18 createRoot
 const rootEl = document.getElementById('root');
 if (rootEl) {
-  try {
-    const root = createRoot(rootEl);
-    root.render(
-      <ErrorBoundary>
-        <SurvivorTierListUnifiedApp />
-      </ErrorBoundary>
-    );
-  } catch {
-    // fallback for older environments
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const legacyReactDOM = ReactDOM as any;
-    legacyReactDOM.render(
-      <ErrorBoundary>
-        <SurvivorTierListUnifiedApp />
-      </ErrorBoundary>, 
-      rootEl
-    );
-  }
+  const root = createRoot(rootEl);
+  root.render(
+    <ErrorBoundary>
+      <SurvivorTierListUnifiedApp />
+    </ErrorBoundary>
+  );
 }
 
 export default SurvivorTierListUnifiedApp;

@@ -21,6 +21,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -32,6 +34,23 @@ jobs:
 
       - name: Run tests
         run: npm test --silent
+
+      - name: Build merge summary
+        id: build_merge_summary
+        run: |
+          # Prefer assistant summary file when available
+          if [ -f .assistant_autocommit_summary.md ]; then
+            summary=$(sed 's/%/%%/g' .assistant_autocommit_summary.md | awk '{printf "%s\\n", $0}')
+          else
+            git remote set-head origin -a || true
+            git fetch origin main --depth=1 || git fetch origin main || true
+            commits=$(git --no-pager log --pretty=format:"%h %s" origin/main..HEAD || echo "(no commits available)")
+            files=$(git --no-pager diff --name-status origin/main...HEAD || echo "(no file diff available)")
+            summary="Automated merge performed by assistant.\n\nCommits:\n${commits}\n\nChanged files:\n${files}"
+          fi
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          printf "%s\n" "$summary"
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Merge pull request
         uses: peter-evans/merge@v3
