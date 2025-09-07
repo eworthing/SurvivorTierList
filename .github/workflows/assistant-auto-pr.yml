@@ -1,0 +1,38 @@
+name: Assistant auto-PR
+
+on:
+  push:
+    branches:
+      - 'assistant/**'
+
+jobs:
+  test-and-create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test --silent
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "assistant: automated changes — ${{ github.ref_name }}"
+          body: |
+            This PR was opened automatically by the assistant workflow.
+
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Workflow: ${{ github.workflow }}
+          base: main
+          labels: assistant, auto-generated

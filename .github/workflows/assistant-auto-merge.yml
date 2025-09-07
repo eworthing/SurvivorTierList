@@ -1,0 +1,42 @@
+name: Assistant auto-merge
+
+on:
+  pull_request:
+    types: [opened, labeled, reopened, synchronize]
+    branches: [ main ]
+
+jobs:
+  test-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure PR is assistant-labeled
+        uses: actions/github-script@v6
+        id: check_label
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            if (!labels.includes('assistant')) {
+              core.setFailed('PR is not labeled with "assistant" — skipping auto-merge.');
+            }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test --silent
+
+      - name: Merge pull request
+        uses: peter-evans/merge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-number: ${{ github.event.pull_request.number }}
+          merge-method: merge
+          commit-title: "assistant: auto-merge on green"

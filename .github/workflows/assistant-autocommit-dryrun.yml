@@ -1,0 +1,27 @@
+name: Assistant autocommit dry-run
+
+on:
+  push:
+    branches: [ main, 'assistant/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  autocommit-dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Run assistant autocommit (dry-run)
+        run: |
+          node tools/assistant_autocommit.js --dry-run "CI: autocommit dry-run"
