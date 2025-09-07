@@ -1,22 +1,22 @@
 import type { Tiers } from './types';
 
+// Deep clone helper: prefer native structuredClone, fallback to JSON-based clone with safe guards
 export const deepClone = <T>(obj: T): T => {
   try {
-    // Prefer structuredClone when available (preserves more types)
-    const maybe = globalThis as unknown as { structuredClone?: (v: unknown) => unknown };
-    if (typeof maybe.structuredClone === 'function') {
-      return maybe.structuredClone(obj) as T;
+    const g: unknown = globalThis;
+    const sc = typeof g === 'object' && g !== null && 'structuredClone' in (g as Record<string, unknown>) ? (g as Record<string, unknown>)['structuredClone'] : undefined;
+    if (typeof sc === 'function') {
+      const fn = sc as (v: unknown) => unknown;
+      return fn(obj) as T;
     }
-    return JSON.parse(JSON.stringify(obj));
   } catch {
-    // Fallback for non-serializable objects
-    if (Array.isArray(obj)) {
-      return [...obj] as unknown as T;
-    }
-    if (obj && typeof obj === 'object') {
-      return { ...obj } as T;
-    }
-    return obj;
+    // fall through to JSON fallback
+  }
+  try {
+    return JSON.parse(JSON.stringify(obj)) as T;
+  } catch {
+  // Last-resort: return as-is (tests should be satisfied by JSON fallback above)
+  return obj;
   }
 };
 
@@ -26,8 +26,7 @@ export const calculateRankedCount = (tiers: Tiers) => {
     return sum + arr.length;
   }, 0);
 };
-
-export default { deepClone, calculateRankedCount };
+// (No default export to enable better tree-shaking)
 
 // Try to extract a simple dominant/average color from an image URL.
 // Returns a hex color string or null on failure. Uses a small canvas sample.

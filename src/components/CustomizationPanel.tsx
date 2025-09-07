@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { TierConfig, TierConfigEntry } from '../types';
+import { MESSAGES } from '../constants/messages';
 
 interface CustomizationPanelProps {
   tierConfig: TierConfig;
@@ -56,7 +57,7 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     const tierCount = Object.keys(localConfig).length;
     
     if (tierCount <= 2) {
-      alert('You must have at least two tiers.');
+  window.dispatchEvent(new CustomEvent('tierlist:notify', { detail: { message: MESSAGES.NEED_TWO_TIERS } }));
       return;
     }
     

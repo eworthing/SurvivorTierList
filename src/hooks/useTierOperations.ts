@@ -1,7 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Contestant, Tiers, UserStats } from '../types';
-import { deepClone } from '../utils';
 import { moveContestant, clearTier as clearTierHelper, reorderWithinTier, randomizeIntoTiers } from '../tiers';
 import * as HistoryManager from '../historyManager';
 
@@ -31,11 +30,11 @@ export const useTierOperations = ({
 
   // Initialize tiers when dependencies change
   useEffect(() => {
-    const newTiers = { 
-      ...Object.fromEntries(tierNames.map(name => [name, []])), 
-      unranked: deepClone(currentContestants) 
+    const newTiers = {
+      ...Object.fromEntries(tierNames.map(name => [name, []])),
+      unranked: structuredClone(currentContestants)
     };
-    setTiers(deepClone(newTiers));
+    setTiers(structuredClone(newTiers));
     const initialHistory = HistoryManager.initHistory(newTiers);
     setHistory(initialHistory);
     setStartTime(Date.now());
@@ -93,11 +92,11 @@ export const useTierOperations = ({
   }, []);
 
   const reset = useCallback(() => {
-    const resetTiers = { 
-      ...Object.fromEntries(tierNames.map(name => [name, []])), 
-      unranked: deepClone(currentContestants) 
+    const resetTiers = {
+      ...Object.fromEntries(tierNames.map(name => [name, []])),
+      unranked: structuredClone(currentContestants)
     };
-    setTiers(deepClone(resetTiers));
+    setTiers(structuredClone(resetTiers));
     saveToHistory(resetTiers);
     setStartTime(Date.now());
     if (onAction) onAction('Reset all tiers');
@@ -105,7 +104,7 @@ export const useTierOperations = ({
 
   const randomizeTiers = useCallback(() => {
     const newTiers = randomizeIntoTiers(currentContestants, tierNames, rng);
-    setTiers(deepClone(newTiers));
+    setTiers(structuredClone(newTiers));
     saveToHistory(newTiers);
     if (onAction) onAction('Randomized tiers');
   }, [currentContestants, tierNames, saveToHistory, onAction, rng]);
@@ -158,7 +157,7 @@ export const useTierOperations = ({
   reorderWithin,
     // Allow loading tiers from persisted state and reset history accordingly
     setTiersFromLoad: (loaded: Tiers, resetHistory = true) => {
-      setTiers(deepClone(loaded));
+      setTiers(structuredClone(loaded));
       if (resetHistory) {
         const h = HistoryManager.initHistory(loaded);
         setHistory(h);

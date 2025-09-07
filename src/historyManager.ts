@@ -1,8 +1,7 @@
-import { deepClone } from './utils';
 import type { History } from './types';
 
 export function initHistory<T>(initialSnapshot: T, limit = 50): History<T> {
-  const snapshot = deepClone(initialSnapshot);
+  const snapshot = structuredClone(initialSnapshot);
   return {
     stack: [snapshot],
     index: 0,
@@ -11,7 +10,7 @@ export function initHistory<T>(initialSnapshot: T, limit = 50): History<T> {
 }
 
 export function saveSnapshot<T>(history: History<T>, snapshot: T): History<T> {
-  const s = deepClone(snapshot);
+  const s = structuredClone(snapshot);
   const before = history.stack.slice(0, history.index + 1);
   before.push(s);
   const overflow = Math.max(0, before.length - history.limit);
@@ -39,7 +38,7 @@ export function redo<T>(history: History<T>): History<T> {
 }
 
 export function getCurrent<T>(history: History<T>) {
-  return deepClone(history.stack[history.index]) as T;
+  return structuredClone(history.stack[history.index]) as T;
 }
 
 export default { initHistory, saveSnapshot, undo, redo, getCurrent, canUndo, canRedo };

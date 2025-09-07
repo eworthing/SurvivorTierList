@@ -1,9 +1,8 @@
-import { deepClone } from '../utils';
 import type { Contestant, Tiers } from '../types';
 
 export const moveContestant = (tiers: Tiers, contestantId: string, targetTierName: string): Tiers => {
   if (!contestantId || !targetTierName || typeof tiers !== 'object') return tiers;
-  const newTiers: Tiers = deepClone(tiers as unknown) as Tiers;
+  const newTiers: Tiers = structuredClone(tiers as unknown as Tiers);
 
   let sourceTier: string | null = null;
   let contestant: Contestant | null = null;
@@ -29,7 +28,7 @@ export const moveContestant = (tiers: Tiers, contestantId: string, targetTierNam
 };
 
 export const clearTier = (tiers: Tiers, tierName: string): { tiers: Tiers; moved: Contestant[] } => {
-  const newTiers = deepClone(tiers as unknown) as Tiers;
+  const newTiers = structuredClone(tiers as unknown as Tiers);
   const moved = newTiers[tierName] || [];
   newTiers[tierName] = [];
   newTiers.unranked = [...(newTiers.unranked || []), ...moved];
@@ -51,7 +50,7 @@ export const reorderList = <T>(list: T[], from: number, to: number): T[] => {
 
 export const reorderWithinTier = (tiers: Tiers, tierName: string, from: number, to: number): Tiers => {
   if (!tiers || !Array.isArray(tiers[tierName])) return tiers;
-  const newTiers = deepClone(tiers as unknown) as Tiers;
+  const newTiers = structuredClone(tiers as unknown as Tiers);
   const list = newTiers[tierName] || [];
   newTiers[tierName] = reorderList(list, from, to);
   return newTiers;

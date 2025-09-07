@@ -17,7 +17,7 @@ export type TierConfig = Record<string, TierConfigEntry>;
 export type History<T = unknown> = { stack: T[]; index: number; limit: number };
 
 // Modal content types for better type safety
-export type ModalContent = string | 'customization' | 'comparison';
+export type ModalContent = string | 'customization' | 'comparison' | { type: 'confirm'; message: string; confirmLabel?: string; cancelLabel?: string; tone?: 'default' | 'danger'; onResult?: (ok: boolean) => void; };
 
 export interface ModalState {
   isOpen: boolean;

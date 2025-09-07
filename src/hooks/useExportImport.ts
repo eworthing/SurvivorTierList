@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Contestant, TierConfig, Tiers } from '../types';
+import { MESSAGES } from '../constants/messages';
 import { THEMES } from '../config/themes';
 
 export const useExportImport = () => {
@@ -98,9 +99,10 @@ export const useExportImport = () => {
     // Try clipboard first, then download
     try {
       if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        await navigator.clipboard.writeText(text);
-        alert('Ranking copied to clipboard!');
-        return;
+  await navigator.clipboard.writeText(text);
+  // Dispatch a custom event so app-level toast system can react without tight coupling
+  window.dispatchEvent(new CustomEvent('tierlist:notify', { detail: { message: MESSAGES.RANKING_COPIED } }));
+  return;
       }
   } catch {
       // Continue to download fallback
