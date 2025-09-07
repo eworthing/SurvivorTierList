@@ -18,7 +18,8 @@ function run(cmd) {
   }
 }
 
-const msg = process.argv.slice(2).join(' ') || 'assistant: automated commit';
+const msgArg = process.argv.slice(2).join(' ');
+const msg = msgArg || 'assistant: automated changes';
 
 let linesChanged = 0;
 try {
@@ -61,6 +62,52 @@ if (linesChanged < threshold && !isBreaking) {
 
 const branch = `assistant/autocommit/${new Date().toISOString().replace(/[:.]/g,'')}`;
 run(`git checkout -b ${branch}`);
-run(`git commit -m "${msg.replace(/\"/g, '\\"')}" || true`);
+
+// Build a detailed summary for visibility (used as commit message and PR body)
+let summary = `# ${msg}\n\n`;
+try {
+  const nameStatus = run('git diff --staged --name-status || true');
+  const numstat = run('git diff --staged --numstat || true');
+  const files = [];
+  const counts = { A: 0, M: 0, D: 0 };
+  if (nameStatus) {
+    nameStatus.split('\n').forEach(line => {
+      const parts = line.trim().split('\t');
+      const status = parts[0];
+      const file = parts.slice(1).join('\t');
+      files.push({ status, file });
+      if (status && counts[status] !== undefined) counts[status]++;
+    });
+  }
+
+  summary += `**Files changed:** ${files.length} (A=${counts.A} M=${counts.M} D=${counts.D})\n\n`;
+  if (numstat) {
+    summary += "```\nFile\tAdded\tRemoved\n";
+    numstat.split('\n').forEach(line => {
+      const [add, del, file] = line.split('\t');
+      summary += `${file}\t${add || 0}\t${del || 0}\n`;
+    });
+    summary += "```\n\n";
+  }
+
+  if (files.length) {
+    summary += 'Changed files:\n\n';
+    files.forEach(f => {
+      summary += `- ${f.status}\t${f.file}\n`;
+    });
+    summary += '\n';
+  }
+  // include optional user-provided message at the end
+  if (msgArg) summary += `Notes: ${msgArg}\n`;
+} catch (e) {
+  // ignore
+}
+
+// write summary to a file and use it as the commit message
+const summaryPath = path.join(root, '.assistant_autocommit_summary.md');
+try { fs.writeFileSync(summaryPath, summary, 'utf8'); } catch (e) {}
+
+run(`git add -A`);
+run(`git commit -F "${summaryPath}" || true`);
 run(`git push -u origin ${branch}`);
-console.log(`Pushed auto-commit to ${branch}`);
+console.log(`Pushed auto-commit to ${branch} with summary at ${summaryPath}`);

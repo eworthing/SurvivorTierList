@@ -23,16 +23,23 @@ jobs:
       - name: Run tests
         run: npm test --silent
 
+      - name: Build PR body
+        id: build_body
+        run: |
+          if [ -f .assistant_autocommit_summary.md ]; then
+            body=$(sed 's/%/%%/g' .assistant_autocommit_summary.md | awk '{printf "%s\\n", $0}')
+          else
+            body="This PR was opened automatically by the assistant workflow.\n\nBranch: ${GITHUB_REF}\nCommit: ${GITHUB_SHA}\nWorkflow: ${GITHUB_WORKFLOW}"
+          fi
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          printf "%s\n" "$body"
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "assistant: automated changes — ${{ github.ref_name }}"
-          body: |
-            This PR was opened automatically by the assistant workflow.
-
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Workflow: ${{ github.workflow }}
+          body: ${{ steps.build_body.outputs.body }}
           base: main
           labels: assistant, auto-generated
