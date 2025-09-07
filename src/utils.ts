@@ -33,37 +33,43 @@ export const calculateRankedCount = (tiers: Tiers) => {
 export const getDominantColorFromImage = async (src: string): Promise<string | null> => {
   try {
     return await new Promise((resolve) => {
+      let settled = false;
+      const safeResolve = (val: string | null) => {
+        if (settled) return; // prevent double resolve (timeout + load race)
+        settled = true;
+        resolve(val);
+      };
       const img = new Image();
       img.crossOrigin = 'Anonymous';
       img.onload = () => {
         try {
-          const w = Math.min(64, img.naturalWidth);
-          const h = Math.min(64, img.naturalHeight);
+          const w = Math.min(64, img.naturalWidth || 0);
+          const h = Math.min(64, img.naturalHeight || 0);
+          if (!w || !h) return safeResolve(null);
           const canvas = document.createElement('canvas');
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
-          if (!ctx) return resolve(null);
+          if (!ctx) return safeResolve(null);
           ctx.drawImage(img, 0, 0, w, h);
           const data = ctx.getImageData(0, 0, w, h).data;
           let r = 0, g = 0, b = 0, count = 0;
           for (let i = 0; i < data.length; i += 4) {
-            const alpha = data[i+3];
+            const alpha = data[i + 3];
             if (alpha === 0) continue;
-            r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+            r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
           }
-          if (count === 0) return resolve(null);
-          r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
-          const hex = `#${((1<<24) + (r<<16) + (g<<8) + b).toString(16).slice(1)}`;
-          resolve(hex);
+          if (!count) return safeResolve(null);
+            r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+            const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+            safeResolve(hex);
         } catch {
-          resolve(null);
+          safeResolve(null);
         }
       };
-      img.onerror = () => resolve(null);
+      img.onerror = () => safeResolve(null);
       img.src = src;
-      // If loading from cache, onload will fire; otherwise give a timeout fallback
-      setTimeout(() => resolve(null), 1200);
+  setTimeout(() => safeResolve(null), 1200);
     });
   } catch {
     return null;
