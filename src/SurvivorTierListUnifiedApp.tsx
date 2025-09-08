@@ -1,6 +1,10 @@
 // SurvivorTierListUnifiedApp root component
 import React, { useState, useCallback, useMemo, useRef } from 'react';
+import './styles/tailwind.css';
+import './styles/fonts.css';
 import { createRoot } from 'react-dom/client';
+// Capacitor SplashScreen: hide when the web app is ready
+import { SplashScreen } from '@capacitor/splash-screen';
 import Modal from './components/Modal';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoModal from './components/VideoModal';
@@ -22,6 +26,8 @@ import { useComparison } from './hooks/useComparison';
 import { useTierOperations } from './hooks/useTierOperations';
 import { useModalManagement } from './hooks/useModalManagement';
 import { useExportImport } from './hooks/useExportImport';
+import { nativeShare } from './hooks/useNativeShare';
+import { exportTierImageAndShare } from './hooks/useImageShare';
 import { usePWA } from './hooks/usePWA';
 
 // Configuration
@@ -39,6 +45,18 @@ import TierGrid from './components/TierGrid';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
+
+  // Hide the native splash screen once the initial data has been processed
+  React.useEffect(() => {
+    try {
+      if (contestantGroups && Object.keys(contestantGroups).length > 0) {
+        // Best-effort hide; ignore rejections
+  SplashScreen.hide?.().catch?.(() => {});
+      }
+    } catch {
+      // ignore when not running under Capacitor or API missing
+    }
+  }, [contestantGroups]);
 
   // --- State management ---
   const [selectedGroupName, setSelectedGroupName] = useState<string>(Object.keys(contestantGroups)[0] || 'All Contestants');
@@ -178,7 +196,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 
   
 
-  const { exportRanking, analyzeTier, saveToLocal, loadFromLocal, exportJSON, importJSON } = useExportImport();
+  const { exportRanking, buildExportText, analyzeTier, saveToLocal, loadFromLocal, exportJSON, importJSON } = useExportImport();
   
   // PWA functionality
   const { isInstallable, installPWA, dismissInstallPrompt } = usePWA();
@@ -199,10 +217,28 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     exportRanking(selectedGroupName, tiers, currentTheme, tierConfig);
   }, [exportRanking, selectedGroupName, tiers, currentTheme, tierConfig]);
 
+  const handleNativeShare = useCallback(async () => {
+    try {
+      const text = await buildExportText(selectedGroupName, tiers as Record<string, Contestant[]>, currentTheme, tierConfig);
+      const ok = await nativeShare({ text, title: 'Survivor Tier List' });
+      if (ok) pushToast('Shared successfully'); else pushToast('Share not supported');
+    } catch { pushToast('Share failed'); }
+  }, [buildExportText, selectedGroupName, tiers, currentTheme, tierConfig, pushToast]);
+
+  const handleShareImage = useCallback(async () => {
+    const ok = await exportTierImageAndShare('#root');
+    pushToast(ok ? 'Image shared' : 'Image share failed');
+  }, [pushToast]);
+
   // Handle tier analysis with correct parameters  
   const handleAnalyzeTier = useCallback((tierName: string, contestants: Contestant[]) => {
     analyzeTier(tierName, contestants, tierConfig, setModalState);
   }, [analyzeTier, tierConfig, setModalState]);
+
+  const handleOpenContestantStats = useCallback((c: Contestant) => {
+    const content = `${c.name} — Season ${c.season}\n${c.status || ''}\n${c.bio ? '\n' + c.bio : ''}`;
+    try { showStatsModal(content); } catch {}
+  }, [showStatsModal]);
 
   // Persistence: autosave on changes
   React.useEffect(() => {
@@ -374,6 +410,41 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     return () => clearTimeout(t);
   }, [lastMovedIds]);
 
+  // Handler to finish head-to-head and apply ranking into tiers
+  const finishHeadToHead = useCallback(() => {
+    try {
+      // Stop the H2H loop
+      headToHead.stop();
+    } catch {}
+    try {
+      // Compute ranking from h2h and distribute into tiers in round-robin by score
+      const ranking = headToHead.ranking || [];
+      if (ranking.length === 0) return;
+      // Create buckets for tier names in order
+      const orderedTierNames = tierNames.slice();
+      // We'll build new tiers from existing ones and append ranked contestants to top tiers
+      const newTiers = structuredClone(tiers);
+      // ensure arrays exist
+      orderedTierNames.forEach(n => { if (!Array.isArray(newTiers[n])) newTiers[n] = []; });
+      newTiers.unranked = newTiers.unranked || [];
+      // Distribute ranked contestants into tiers round-robin starting at top
+      for (let i = 0; i < ranking.length; i++) {
+        const target = orderedTierNames[i % orderedTierNames.length];
+        // remove from unranked if present
+        const idx = (newTiers.unranked || []).findIndex((c: Contestant) => c.id === ranking[i].contestant.id);
+        if (idx >= 0) newTiers.unranked.splice(idx, 1);
+        newTiers[target].push(ranking[i].contestant);
+      }
+      // set tiers and snapshot history via setTiersFromLoad helper
+      setTiersFromLoad(newTiers, false);
+      // open modal to view ranking analysis
+      try { showComparisonModal(); } catch {}
+      pushToast('Head-to-head complete — ranking applied');
+    } catch {
+      try { pushToast('Failed to finish head-to-head'); } catch {}
+    }
+  }, [headToHead, tierNames, tiers, setTiersFromLoad, showComparisonModal, pushToast]);
+
   // One-time S tier celebration when first card added
   React.useEffect(() => {
     const sTier = (tiers && typeof tiers === 'object' && 'S' in tiers) ? (tiers as Record<string, Contestant[]>).S : undefined;
@@ -452,6 +523,8 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
           headToHeadToggle={() => headToHead.isActive ? headToHead.stop() : headToHead.start()}
           showCustomizationModal={showCustomizationModal}
           handleExport={handleExport}
+          onNativeShare={handleNativeShare}
+          onShareImage={handleShareImage}
           handleExportJSON={handleExportJSON}
           handleImportJSON={handleImportJSON}
           handleSave={handleSave}
@@ -554,6 +627,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
             clearTier={clearTier}
             lastMovedIds={lastMovedIds}
             celebrateSTier={celebrateSTier}
+            onOpenStats={handleOpenContestantStats}
           />
   </DndContext>
 
@@ -574,6 +648,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
           handleStackForCompare={handleStackForCompare}
           selectedContestant={selectedContestant}
           consideredIds={consideredIds}
+          onOpenStats={handleOpenContestantStats}
         />
       </div>
       
@@ -601,7 +676,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
       />
 
   {/* Head-to-Head Voting Overlay */}
-  <HeadToHeadMode h2h={headToHead} onClose={headToHead.stop} />
+  <HeadToHeadMode h2h={headToHead} onClose={headToHead.stop} onFinish={finishHeadToHead} />
   <Toasts toasts={toasts} remove={removeToast} />
       {celebrateSTier && confettiPieces.length > 0 && (
         <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
@@ -636,6 +711,8 @@ if (rootEl) {
       <SurvivorTierListUnifiedApp />
     </ErrorBoundary>
   );
+
+  // splash hide is handled after initial data processing (see above)
 }
 
 export default SurvivorTierListUnifiedApp;

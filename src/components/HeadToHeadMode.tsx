@@ -5,6 +5,7 @@ import type { UseHeadToHeadReturn } from '../hooks/useHeadToHead';
 interface HeadToHeadModeProps {
   h2h: UseHeadToHeadReturn;
   onClose: () => void;
+  onFinish?: () => void;
 }
 
 const Card: React.FC<{ contestant: Contestant; onClick: () => void }> = ({ contestant, onClick }) => (
@@ -23,7 +24,7 @@ const Card: React.FC<{ contestant: Contestant; onClick: () => void }> = ({ conte
   </button>
 );
 
-const HeadToHeadMode: React.FC<HeadToHeadModeProps> = ({ h2h, onClose }) => {
+const HeadToHeadMode: React.FC<HeadToHeadModeProps> = ({ h2h, onClose, onFinish }) => {
   if (!h2h.isActive) return null;
   const pair = h2h.pair;
 
@@ -55,7 +56,7 @@ const HeadToHeadMode: React.FC<HeadToHeadModeProps> = ({ h2h, onClose }) => {
             className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg"
           >Skip</button>
           <button
-            onClick={onClose}
+            onClick={() => { if (typeof onFinish === 'function') onFinish(); else onClose(); }}
             className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg"
           >Finish & View Ranking</button>
         </div>

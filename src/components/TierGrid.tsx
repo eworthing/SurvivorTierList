@@ -24,6 +24,7 @@ type Props = {
   clearTier: (tierName: string) => void;
   lastMovedIds: string[];
   celebrateSTier: boolean;
+  onOpenStats?: (c: Contestant) => void;
 };
 
 export default function TierGrid(p: Props) {
@@ -52,6 +53,7 @@ export default function TierGrid(p: Props) {
           onClearTier={p.clearTier}
           highlightIds={p.lastMovedIds}
           celebrateSTier={p.celebrateSTier}
+          onOpenStats={p.onOpenStats}
         />
       ))}
     </main>
