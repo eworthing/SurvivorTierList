@@ -35,6 +35,7 @@ import { setDragAccentColor } from './stores/uiStore';
 import { MESSAGES } from './constants/messages';
 import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import AppToolbar from './components/AppToolbar';
+import ComparisonPanel from './components/ComparisonPanel';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -475,58 +476,11 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 
         {/* Comparison Mode UI */}
         {comparisonState.isActive && (
-          <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-purple-500">
-            <div className="text-center mb-4">
-              <h3 className="text-xl font-bold text-purple-400">Comparison Mode Active</h3>
-              <p className="text-slate-400">Click contestants to compare them side by side</p>
-            </div>
-            
-            {comparisonState.contestants[0] || comparisonState.contestants[1] ? (
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="text-center">
-                  {comparisonState.contestants[0] ? (
-                    <div className="bg-slate-700 p-3 rounded-lg">
-                      <img src={comparisonState.contestants[0].imageUrl} alt={comparisonState.contestants[0].name} className="w-16 h-16 rounded-full mx-auto mb-2" />
-                      <div className="text-white font-semibold">{comparisonState.contestants[0].name}</div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-700/50 border-2 border-dashed border-slate-500 p-3 rounded-lg w-24 h-24 flex items-center justify-center text-slate-500">
-                      Select 1st
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center text-2xl text-purple-400">VS</div>
-                
-                <div className="text-center">
-                  {comparisonState.contestants[1] ? (
-                    <div className="bg-slate-700 p-3 rounded-lg">
-                      <img src={comparisonState.contestants[1].imageUrl} alt={comparisonState.contestants[1].name} className="w-16 h-16 rounded-full mx-auto mb-2" />
-                      <div className="text-white font-semibold">{comparisonState.contestants[1].name}</div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-700/50 border-2 border-dashed border-slate-500 p-3 rounded-lg w-24 h-24 flex items-center justify-center text-slate-500">
-                      Select 2nd
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-            
-            <div className="flex justify-center gap-2">
-              {generateComparisonAnalysis && (
-                <button 
-                  onClick={showComparisonModal}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-all"
-                >
-                  📊 View Analysis
-                </button>
-              )}
-              <button onClick={clearComparison} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all">
-                Clear
-              </button>
-            </div>
-          </div>
+          <ComparisonPanel
+            contestants={comparisonState.contestants}
+            onViewAnalysis={generateComparisonAnalysis ? showComparisonModal : undefined}
+            onClear={clearComparison}
+          />
         )}
 
         <DndContext
