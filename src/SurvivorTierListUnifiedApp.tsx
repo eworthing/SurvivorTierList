@@ -26,7 +26,7 @@ import { useComparison } from './hooks/useComparison';
 import { useTierOperations } from './hooks/useTierOperations';
 import { useModalManagement } from './hooks/useModalManagement';
 import { useExportImport } from './hooks/useExportImport';
-import { nativeShare } from './hooks/useNativeShare';
+import { nativeShare } from './hooks/nativeShareClean';
 import { exportTierImageAndShare } from './hooks/useImageShare';
 import { usePWA } from './hooks/usePWA';
 

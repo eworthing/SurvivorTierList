@@ -22,6 +22,8 @@ type Props = {
   headToHeadToggle: () => void;
   showCustomizationModal: () => void;
   handleExport: () => void;
+  onNativeShare?: () => void;
+  onShareImage?: () => void;
   handleExportJSON: () => void;
   handleImportJSON: () => void;
   handleSave: () => void;
@@ -80,7 +82,9 @@ export default function AppToolbar(props: Props) {
       </div>
       <div className="flex justify-center flex-wrap gap-2 sm:gap-3 mb-4">
         <button onClick={p.showCustomizationModal} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🎨 Customize</button>
-        <button onClick={p.handleExport} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📤 Export</button>
+  <button onClick={p.handleExport} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📤 Export</button>
+  {p.onNativeShare && (<button onClick={p.onNativeShare} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🔗 Share</button>)}
+  {p.onShareImage && (<button onClick={p.onShareImage} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🖼 Share Image</button>)}
         <button onClick={p.handleExportJSON} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🗂 Export JSON</button>
         <button onClick={p.handleImportJSON} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📥 Import JSON</button>
         <button onClick={p.handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">💾 Save</button>
