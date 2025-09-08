@@ -4,3 +4,45 @@ dist/
 .DS_Store
 coverage/
 .vscode/
+
+# Electron build outputs and generated app assets
+/electron/app/
+/electron/build/
+/electron/dist/
+/electron/node_modules/
+
+# iOS build artifacts and CocoaPods
+/ios/App/Pods/
+/ios/App/Pods/**
+/ios/App/App/public/assets/
+/ios/App/App/public/icons/
+/ios/App/App/public/fonts/
+/ios/App/App/public/*.js
+/ios/App/App/public/*.css
+/ios/App/App/public/index.html
+/ios/App/App/public/manifest.json
+/ios/App/App/public/survivor-data.js
+/ios/App/App/public/sw.js
+
+# Xcode user data and derived data
+**/xcuserdata/
+**/DerivedData/
+/ios/App/App.xcworkspace/xcuserdata/
+/ios/App/App.xcodeproj/xcuserdata/
+
+# Capacitor/android/ios build products
+/android/
+/ios/build/
+/ios/App/build/
+
+# Test snapshots (optional: ignore if you prefer snapshots untracked)
+/test/__snapshots__/
+
+# Public/generated icons/fonts
+/public/icons/
+/public/fonts/
+
+# Misc generated / logs
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
