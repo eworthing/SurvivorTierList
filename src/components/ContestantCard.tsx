@@ -21,6 +21,7 @@ type Props = {
   onStackForCompare?: (id: string) => void; // called when held on top of another card
   index?: number;
   tierName?: string;
+  onOpenStats?: (c: Contestant) => void;
 };
 
 const ContestantCard = React.memo(function ContestantCard({ 
@@ -39,6 +40,7 @@ const ContestantCard = React.memo(function ContestantCard({
   onStackForCompare,
   index,
   tierName
+  , onOpenStats
 }: Props) {
   const interactions = useContestantCardInteractions({
     contestant,
@@ -50,7 +52,8 @@ const ContestantCard = React.memo(function ContestantCard({
     isDragging,
     onDominantColor,
     onWiggleUndo,
-    onStackForCompare,
+  onStackForCompare,
+  onOpenStats,
   });
 
   const {

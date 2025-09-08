@@ -19,6 +19,7 @@ type Props = {
   handleStackForCompare: (id: string) => void;
   selectedContestant: Contestant | null;
   consideredIds: Set<string>;
+  onOpenStats?: (c: Contestant) => void;
 };
 
 export default function UnrankedPanel(p: Props) {
@@ -38,7 +39,7 @@ export default function UnrankedPanel(p: Props) {
         {!p.unrankedCollapsed && (
           <div className="mt-2 flex flex-wrap justify-center gap-3 min-h-[120px]">
             {p.filteredUnranked.length > 0 ? p.filteredUnranked.map(contestant => (
-              <ContestantCard
+                <ContestantCard
                 key={contestant.id}
                 contestant={contestant}
                 showStats={p.showStats}
@@ -49,6 +50,7 @@ export default function UnrankedPanel(p: Props) {
                 onQuickRank={p.handleQuickRankWithMode}
                 onSelect={p.comparisonActive ? p.selectContestantForComparison : (c: Contestant) => p.setSelectedContestant(c)}
                 onStackForCompare={p.handleStackForCompare}
+                onOpenStats={p.onOpenStats}
                 isSelected={p.selectedContestant?.id === contestant.id}
                 wasConsidered={p.consideredIds.has(contestant.id)}
               />

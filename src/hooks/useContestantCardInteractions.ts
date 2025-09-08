@@ -14,6 +14,7 @@ type Args = {
   onDominantColor?: (hex: string | null) => void;
   onWiggleUndo?: (id: string) => void;
   onStackForCompare?: (id: string) => void;
+  onOpenStats?: (c: Contestant) => void;
 };
 
 export default function useContestantCardInteractions({
@@ -27,6 +28,7 @@ export default function useContestantCardInteractions({
   onDominantColor,
   onWiggleUndo,
   onStackForCompare
+  , onOpenStats
 }: Args) {
   const [showTiers, setShowTiers] = React.useState(false);
   const [imgSrc, setImgSrc] = React.useState(contestant.imageUrl || 'https://placehold.co/100x133?text=No+Image');
@@ -46,15 +48,19 @@ export default function useContestantCardInteractions({
 
   const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
+    // Allow selecting even when quickRankMode is active so a tier row click can move a selected contestant
+    if (onSelect) {
+      onSelect(contestant);
+      return;
+    }
     if (quickRankMode) return handleQuickRankClick(e);
-    if (onSelect) onSelect(contestant);
   };
 
   const handleTouchStart = () => {
-    if (quickRankMode) return;
+    // start long-press to open stats (regardless of quickRankMode)
     const timer = window.setTimeout(() => {
-      if ('vibrate' in navigator) navigator.vibrate(50);
-      setShowTiers(true);
+      if ('vibrate' in navigator) navigator.vibrate?.(50);
+      try { onOpenStats?.(contestant); } catch {}
     }, 500);
     setLongPressTimer(timer);
     setIsDraggingMobile(true);

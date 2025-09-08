@@ -29,6 +29,7 @@ interface TierRowProps {
   dragAccentColor?: string | null;
   onDominantColor?: (hex: string | null) => void;
   onStackForCompare?: (id: string) => void;
+  onOpenStats?: (c: Contestant) => void;
 }
 
 const TierRow: React.FC<TierRowProps> = React.memo(({
@@ -51,6 +52,7 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
   highlightIds = [],
   celebrateSTier = false
   , dragAccentColor = null, onDominantColor, onStackForCompare
+  , onOpenStats
 }) => {
   // jostle animation is driven by highlightIds from parent
   const isJostlingLocal = highlightIds && highlightIds.length > 0;
@@ -161,6 +163,7 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
                         isSelected={selectedContestant?.id === contestant.id}
                         onDominantColor={onDominantColor}
                         onStackForCompare={onStackForCompare}
+                        onOpenStats={onOpenStats}
                         index={idx}
                         tierName={tierName}
                       />
