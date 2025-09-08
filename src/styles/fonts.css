@@ -1,0 +1,6 @@
+/* Minimal fonts placeholder */
+@font-face {
+  font-family: 'InterVar';
+  src: local('Arial');
+}
+body { font-family: InterVar, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
