@@ -2,7 +2,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import Modal from './components/Modal';
-import ContestantCard from './components/ContestantCard';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoModal from './components/VideoModal';
 import TierRow from './components/TierRow';
@@ -36,6 +35,7 @@ import { MESSAGES } from './constants/messages';
 import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import AppToolbar from './components/AppToolbar';
 import ComparisonPanel from './components/ComparisonPanel';
+import UnrankedPanel from './components/UnrankedPanel';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -561,45 +561,24 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   </main>
   </DndContext>
 
-        <footer className="text-center mt-8">
-          <div className="mb-4 bg-slate-800 rounded-lg p-2">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-bold text-slate-300 flex items-center gap-2">📍 Unranked Contestants
-                <span className="text-xs font-normal text-slate-400">({unrankedContestants.length} remaining)</span>
-              </h2>
-              <button
-                onClick={() => setUnrankedCollapsed(c => !c)}
-                className="text-slate-300 text-xs bg-slate-700/60 hover:bg-slate-600 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
-                aria-expanded={!unrankedCollapsed}
-              >{unrankedCollapsed ? 'Expand' : 'Collapse'}</button>
-            </div>
-            {!unrankedCollapsed && (
-              <div className="mt-2 flex flex-wrap justify-center gap-3 min-h-[120px]">
-                {filteredUnranked.length > 0 ? filteredUnranked.map(contestant => (
-                  <ContestantCard
-                    key={contestant.id}
-                    contestant={contestant}
-                    showStats={showStats}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEndWithClear}
-                    isDragging={draggedContestant === contestant.id}
-                    quickRankMode={quickRankMode}
-                    onQuickRank={handleQuickRankWithMode}
-                    onSelect={comparisonState.isActive ? selectContestantForComparison : (c: Contestant) => setSelectedContestant(c)}
-                    onStackForCompare={handleStackForCompare}
-                    isSelected={selectedContestant?.id === contestant.id}
-                    wasConsidered={consideredIds.has(contestant.id)}
-                    
-                  />
-                )) : (
-                  <div className="flex items-center justify-center h-full text-slate-500">
-                    {unrankedContestants.length === 0 ? 'All contestants have been ranked! Great job!' : 'No matches for current search / filters'}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </footer>
+        <UnrankedPanel
+          filteredUnranked={filteredUnranked}
+          unrankedCount={unrankedContestants.length}
+          unrankedCollapsed={unrankedCollapsed}
+          setUnrankedCollapsed={setUnrankedCollapsed}
+          showStats={showStats}
+          handleDragStart={handleDragStart}
+          handleDragEndWithClear={handleDragEndWithClear}
+          draggedContestant={draggedContestant}
+          quickRankMode={quickRankMode}
+          handleQuickRankWithMode={handleQuickRankWithMode}
+          comparisonActive={comparisonState.isActive}
+          selectContestantForComparison={selectContestantForComparison}
+          setSelectedContestant={setSelectedContestant}
+          handleStackForCompare={handleStackForCompare}
+          selectedContestant={selectedContestant}
+          consideredIds={consideredIds}
+        />
       </div>
       
   {/* Mobile Components */}
