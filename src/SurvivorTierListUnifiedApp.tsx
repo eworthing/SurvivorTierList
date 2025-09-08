@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client';
 import Modal from './components/Modal';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoModal from './components/VideoModal';
-import TierRow from './components/TierRow';
 import ModalContentRenderer from './components/ModalContentRenderer';
 import QuickRankMobile from './components/QuickRankMobile';
 import PWAInstallBanner from './components/PWAInstallBanner';
@@ -36,6 +35,7 @@ import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import AppToolbar from './components/AppToolbar';
 import ComparisonPanel from './components/ComparisonPanel';
 import UnrankedPanel from './components/UnrankedPanel';
+import TierGrid from './components/TierGrid';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -532,33 +532,29 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
             try { handleDragEndWithClear(); } catch {}
           }}
         >
-          <main className="space-y-2 sm:space-y-3">
-          {tierNames.map(tierName => (
-              <TierRow 
-              key={tierName} 
-              tierName={tierName} 
-              tierConfig={tierConfig[tierName]} 
-              contestants={tiers[tierName] || []} 
-              onDragOver={setDraggedOverTier} 
-              isDraggedOver={draggedOverTier === tierName} 
-              dragAccentColor={null}
-              onAnalyzeTier={handleAnalyzeTier} 
-              showStats={showStats} 
-              onDragStart={handleDragStart} 
-              onDragEnd={handleDragEndWithClear} 
-              draggedContestant={draggedContestant} 
-              onZoneClick={moveSelectedToTier}
-              quickRankMode={quickRankMode}
-              onQuickRank={handleQuickRankWithMode}
-              onSelect={comparisonState.isActive ? selectContestantForComparison : (c: Contestant) => setSelectedContestant(c)}
-              onStackForCompare={handleStackForCompare}
-              selectedContestant={selectedContestant}
-              onClearTier={clearTier}
-              highlightIds={lastMovedIds}
-              celebrateSTier={tierName === 'S' && celebrateSTier}
-            />
-          ))}
-  </main>
+          <TierGrid
+            tierNames={tierNames}
+            tierConfig={tierConfig}
+            tiers={tiers as Record<string, import('./types').Contestant[]>}
+            setDraggedOverTier={setDraggedOverTier}
+            draggedOverTier={draggedOverTier}
+            onAnalyzeTier={handleAnalyzeTier}
+            showStats={showStats}
+            handleDragStart={handleDragStart}
+            handleDragEndWithClear={handleDragEndWithClear}
+            draggedContestant={draggedContestant}
+            moveSelectedToTier={moveSelectedToTier}
+            quickRankMode={quickRankMode}
+            handleQuickRankWithMode={handleQuickRankWithMode}
+            comparisonActive={comparisonState.isActive}
+            selectContestantForComparison={selectContestantForComparison}
+            setSelectedContestant={setSelectedContestant}
+            handleStackForCompare={handleStackForCompare}
+            selectedContestant={selectedContestant}
+            clearTier={clearTier}
+            lastMovedIds={lastMovedIds}
+            celebrateSTier={celebrateSTier}
+          />
   </DndContext>
 
         <UnrankedPanel
