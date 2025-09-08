@@ -43,15 +43,12 @@ export const useExportImport = () => {
     }
   }, []);
 
-  const exportRanking = useCallback(async (
+  const buildExportText = useCallback(async (
     selectedGroupName: string, 
     tiers: Record<string, Contestant[]>, 
     currentTheme: string, 
     tierConfig: TierConfig
   ) => {
-    // Persist locally
-    saveToLocal(selectedGroupName, tiers as Tiers, currentTheme, tierConfig);
-
     const exportData = { 
       group: selectedGroupName, 
       date: new Date().toLocaleDateString(), 
@@ -69,10 +66,10 @@ export const useExportImport = () => {
     };
 
     // Try to use dynamic import for export utils
-  let text: string;
+    let text: string;
     try {
       const utils = await import('../exportUtils').catch(() => null);
-  if (utils && typeof (utils as { generateExportText?: (args: unknown) => unknown }).generateExportText === 'function') {
+      if (utils && typeof (utils as { generateExportText?: (args: unknown) => unknown }).generateExportText === 'function') {
         text = (utils as { generateExportText: (args: { group: string; date: string; themeName: string; tiers: Record<string, { name?: string }[]>; tierConfig: TierConfig }) => string }).generateExportText({
           group: exportData.group,
           date: exportData.date,
@@ -96,15 +93,30 @@ export const useExportImport = () => {
         .join('\n\n');
     }
 
+    return text;
+  }, []);
+
+  const exportRanking = useCallback(async (
+    selectedGroupName: string, 
+    tiers: Record<string, Contestant[]>, 
+    currentTheme: string, 
+    tierConfig: TierConfig
+  ) => {
+    // Persist locally
+    saveToLocal(selectedGroupName, tiers as Tiers, currentTheme, tierConfig);
+
+  // Build export text using shared builder (extracted for native sharing reuse)
+  const text = await buildExportText(selectedGroupName, tiers, currentTheme, tierConfig);
+
     // Try clipboard first, then download
     try {
       if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-  await navigator.clipboard.writeText(text);
-  // Dispatch a custom event so app-level toast system can react without tight coupling
-  window.dispatchEvent(new CustomEvent('tierlist:notify', { detail: { message: MESSAGES.RANKING_COPIED } }));
-  return;
+        await navigator.clipboard.writeText(text);
+        // Dispatch a custom event so app-level toast system can react without tight coupling
+        window.dispatchEvent(new CustomEvent('tierlist:notify', { detail: { message: MESSAGES.RANKING_COPIED } }));
+        return;
       }
-  } catch {
+    } catch {
       // Continue to download fallback
     }
 
@@ -118,7 +130,8 @@ export const useExportImport = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  }, [saveToLocal]);
+  }, [saveToLocal, buildExportText]);
+ 
 
   const exportJSON = useCallback((payload: { group: string; theme: string; tierConfig: TierConfig; tiers: Tiers }) => {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -193,7 +206,8 @@ export const useExportImport = () => {
   }, []);
 
   return {
-    exportRanking,
+  exportRanking,
+  buildExportText,
   analyzeTier,
   saveToLocal,
   loadFromLocal,

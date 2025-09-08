@@ -1,5 +1,84 @@
 # Survivor Tier List
 
+Survivor Tier List is a modern React + TypeScript app for building and refining Survivor tier rankings. It's designed for speed, accessibility, and offline-capable usage as a progressive web app.
+
+This README has been updated to reflect the current codebase: React 18 + Vite, Vitest for tests, dnd-kit for drag/sort interactions, framer-motion for animation affordances, and a set of small, focused hooks in `src/hooks/` implementing behavior.
+
+Quick start
+-----------
+
+Install dependencies and start the dev server:
+
+```sh
+npm ci
+npm run dev
+```
+
+Open http://localhost:5173/
+
+What changed in the recent update
+---------------------------------
+- Head-to-head (H2H) vote finalization now applies rankings into tiers (ranking -> round-robin placement).
+- Quick Rank mode preserves click/selection behavior so tier-row click works as a secondary placement path.
+- Long-press (500ms) opens contestant stats on touch/mobile.
+- Export text builder is shared so clipboard export and native sharing use identical output.
+- Image sharing now uses `html2canvas` via dynamic import (optional dependency) and falls back to download when unavailable.
+
+Core capabilities
+-----------------
+- Drag & drop ranking (dnd-kit)
+- Quick Rank (keyboard + mobile overlay)
+- Side quick-drop menu for direct tier placement
+- Undo/Redo, Reset, Randomize
+- Head-to-Head voting and compare modes
+- Autosave to localStorage + manual Save/Load
+- Export formatted text (clipboard-first) and Export/Import JSON
+- Optional native sharing and image sharing features (when supported)
+- Accessibility: ARIA labels, keyboard shortcuts, focus outlines
+
+Architecture notes
+------------------
+- `src/SurvivorTierListUnifiedApp.tsx` — root app wiring, top-level state, and composition of major subsystems.
+- `src/components/` — UI components (toolbar, tier grid, rows, unranked panel, modals).
+- `src/hooks/` — focused hooks implementing behaviors and small state machines (`useHeadToHead`, `useTierOperations`, `useExportImport`, `useModalManagement`, etc.).
+- `src/tiers/` & `src/utils/` — tier manipulation utilities, H2H helper, export helpers, and analysis generators.
+- `public/` — static assets (service worker, manifest, sample data loader `survivor-data.js`).
+
+Developer workflow
+------------------
+- Start dev: `npm run dev`
+- Run tests: `npm test` (Vitest)
+- Build: `npm run build`
+
+Testing & quality
+-----------------
+- Unit/UI tests use Vitest + Testing Library. Recent tests cover H2H finalization, long-press interactions, quick-rank behavior, and compare flows.
+- CI should run `npm ci` then `npm test`.
+
+Platform integrations & editor diagnostics
+------------------------------------------
+- Capacitor and Electron scaffolding are present for native packaging. Some editor diagnostics may flag missing platform types (e.g., `@capacitor/splash-screen`) if native SDKs/types are not installed locally. Those imports are runtime-guarded and the web build is unaffected.
+
+Image sharing note
+------------------
+- Image sharing depends on `html2canvas` to capture the DOM as a canvas. The app dynamically imports `html2canvas` when the feature is used. To enable image sharing locally, install the package:
+
+```sh
+npm install html2canvas
+```
+
+Then restart the dev server.
+
+Contributing
+------------
+- Keep changes small and unit-tested. Add Vitest tests for new UX flows where practical.
+- Use the feature tokens in code or automation for stable capability checks (e.g., QUICK_RANK, HEAD_TO_HEAD).
+
+Contact / License
+-----------------
+See project root for author/license details.
+# Survivor Tier List
+
 Modern React + TypeScript app for building and refining Survivor tier lists. Fast, installable, offline-capable, mobile friendly.
 
 ## Quick start

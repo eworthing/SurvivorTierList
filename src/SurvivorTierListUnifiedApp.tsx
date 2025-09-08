@@ -4,7 +4,6 @@ import './styles/tailwind.css';
 import './styles/fonts.css';
 import { createRoot } from 'react-dom/client';
 // Capacitor SplashScreen: hide when the web app is ready
-import { SplashScreen } from '@capacitor/splash-screen';
 import Modal from './components/Modal';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoModal from './components/VideoModal';
@@ -51,7 +50,16 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     try {
       if (contestantGroups && Object.keys(contestantGroups).length > 0) {
         // Best-effort hide; ignore rejections
-  SplashScreen.hide?.().catch?.(() => {});
+        // runtime/dynamic import so bundlers don't try to resolve native-only modules
+        (async () => {
+          try {
+            const modName = '@capacitor/splash-screen';
+            const mod = await import(/* @vite-ignore */ modName).catch(() => null);
+            const typed = mod as unknown as { SplashScreen?: { hide?: () => Promise<void> } } | null;
+            const SplashScreen = typed?.SplashScreen;
+            SplashScreen?.hide?.().catch?.(() => {});
+          } catch {}
+        })();
       }
     } catch {
       // ignore when not running under Capacitor or API missing

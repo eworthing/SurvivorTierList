@@ -1,0 +1,9 @@
+/* Minimal placeholder for tailwind build verification.
+   The real project includes a full Tailwind setup. This file
+   exists so bundlers can resolve the import during CI/build checks.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { height: 100%; }
