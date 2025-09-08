@@ -2,10 +2,8 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import Modal from './components/Modal';
-import ContestantCard from './components/ContestantCard';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoModal from './components/VideoModal';
-import TierRow from './components/TierRow';
 import ModalContentRenderer from './components/ModalContentRenderer';
 import QuickRankMobile from './components/QuickRankMobile';
 import PWAInstallBanner from './components/PWAInstallBanner';
@@ -34,6 +32,10 @@ import APP_ANIMATIONS from './styles/animations';
 import { setDragAccentColor } from './stores/uiStore';
 import { MESSAGES } from './constants/messages';
 import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import AppToolbar from './components/AppToolbar';
+import ComparisonPanel from './components/ComparisonPanel';
+import UnrankedPanel from './components/UnrankedPanel';
+import TierGrid from './components/TierGrid';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -430,155 +432,55 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
       </Modal>
       <VideoModal isOpen={videoModalState.isOpen} onClose={closeVideoModal} videoUrl={videoModalState.videoUrl} contestantName={videoModalState.contestantName} />
       <div className="max-w-7xl mx-auto">
-        <header className="text-center mb-6 sm:mb-8">
-          <h1 className={`text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${THEMES[currentTheme].accent} mb-4`}>🏝️ Survivor Tier Ranking Pro</h1>
-          <p className="text-slate-400 mb-4">The ultimate family-friendly tier ranking experience!</p>
-          <div className="flex justify-center items-center gap-4 mb-4 flex-wrap">
-            <select value={selectedGroupName} onChange={(e) => setSelectedGroupName(e.target.value)} className="bg-slate-800 border border-slate-700 text-white text-base rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">
-              {Object.keys(contestantGroups).map(groupName => (
-                <option key={groupName} value={groupName}>{groupName}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-center items-center gap-2 mb-4 flex-wrap">
-            <div className="bg-slate-800 px-3 py-1 rounded-lg text-sm">Progress: {progressInfo.rankedCount} / {progressInfo.totalCount} Ranked</div>
-            {/* Thin progress bar */}
-            <div className="w-40 h-2 bg-slate-700 rounded overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500"
-                style={{ width: `${progressInfo.totalCount === 0 ? 0 : (progressInfo.rankedCount / progressInfo.totalCount) * 100}%` }}
-                aria-label="Ranking progress"
-              />
-            </div>
-            {/* Mobile usage tip */}
-            <div className="block md:hidden bg-blue-800/60 px-3 py-1 rounded-lg text-sm">
-              💡 Tap & hold contestants to drag, or tap for quick rank
-            </div>
-            {/* PWA status indicator */}
-            {isInstallable && (
-              <div className="hidden md:block bg-green-800/60 px-3 py-1 rounded-lg text-sm">
-                📱 App can be installed
-              </div>
-            )}
-          </div>
-          <div className="flex justify-center flex-wrap gap-2 sm:gap-3 mb-4">
-            <button onClick={undo} disabled={!HistoryManager.canUndo(history)} className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">↶ Undo</button>
-            <button onClick={redo} disabled={!HistoryManager.canRedo(history)} className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">Redo ↷</button>
-            <button onClick={toggleComparisonMode} className={`${comparisonState.isActive ? 'bg-purple-600 hover:bg-purple-700' : 'bg-slate-600 hover:bg-slate-700'} text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation`}>⚖️ Compare</button>
-            <button onClick={reset} className="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">Reset</button>
-            <button onClick={randomizeTiers} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">Randomize</button>
-            <button onClick={() => setQuickRankMode(!quickRankMode)} className={`bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation ${quickRankMode ? 'ring-2 ring-sky-400' : ''}`}>⚡ Quick Rank</button>
-            <button onClick={() => headToHead.isActive ? headToHead.stop() : headToHead.start()} className={`bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation ${headToHead.isActive ? 'ring-2 ring-green-400' : ''}`}>🆚 H2H</button>
-          </div>
-          <div className="flex justify-center flex-wrap gap-2 sm:gap-3 mb-4">
-            <button onClick={showCustomizationModal} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🎨 Customize</button>
-            <button onClick={handleExport} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📤 Export</button>
-            <button onClick={handleExportJSON} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🗂 Export JSON</button>
-            <button onClick={handleImportJSON} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📥 Import JSON</button>
-            <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">💾 Save</button>
-            <button onClick={handleLoad} className="bg-slate-600 hover:bg-slate-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📂 Load</button>
-            <button onClick={handleStatsModal} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📊 Stats</button>
-            <button onClick={takeSnapshot} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">📸 Snapshot</button>
-            <button onClick={restoreSnapshot} disabled={!snapshotRef.current} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">↩️ Restore</button>
-            <button onClick={clearSnapshot} disabled={!snapshotRef.current} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900/50 disabled:cursor-not-allowed text-white font-bold px-3 py-3 sm:px-3 sm:py-2 text-sm rounded-lg transition-all shadow-lg min-h-[44px] touch-manipulation">🗑 Clear Snap</button>
-          </div>
-          <div className="flex justify-center flex-wrap gap-2 sm:gap-3">
-            <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={showStats} onChange={() => setShowStats(!showStats)} className="form-checkbox h-5 w-5 text-sky-600 bg-gray-800 border-gray-600 rounded focus:ring-sky-500" />Show Stats</label>
-            <select value={currentTheme} onChange={(e) => setCurrentTheme(e.target.value)} className="bg-slate-800 border border-slate-700 text-white text-sm rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">{Object.entries(THEMES).map(([id, theme]) => (<option key={id} value={id}>{theme.name}</option>))}</select>
-            <select
-              aria-label="Quick drop menu side"
-              value={sideMenuSide}
-              onChange={(e) => setSideMenuSide(e.target.value as 'left' | 'right')}
-              className="bg-slate-800 border border-slate-700 text-white text-sm rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none"
-            >
-              <option value="left">Menu: Left</option>
-              <option value="right">Menu: Right</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Search unranked..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-white text-sm rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none"
-              style={{ minWidth: '160px' }}
-            />
-          </div>
-          {allTags.length > 0 && (
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {allTags.map(tag => {
-                const active = activeTagFilters.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => setActiveTagFilters(prev => active ? prev.filter(t => t !== tag) : [...prev, tag])}
-                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${active ? 'bg-sky-600 border-sky-400 text-white' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
-                  >{tag}</button>
-                );
-              })}
-              {activeTagFilters.length > 0 && (
-                <button
-                  onClick={() => setActiveTagFilters([])}
-                  className="text-xs px-2 py-1 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-500"
-                >Clear Tags</button>
-              )}
-            </div>
-          )}
-        </header>
+        <AppToolbar
+          selectedGroupName={selectedGroupName}
+          contestantGroups={contestantGroups}
+          setSelectedGroupName={setSelectedGroupName}
+          progressInfo={progressInfo}
+          isInstallable={isInstallable}
+          undo={undo}
+          redo={redo}
+          historyCanUndo={HistoryManager.canUndo(history)}
+          historyCanRedo={HistoryManager.canRedo(history)}
+          comparisonActive={comparisonState.isActive}
+          toggleComparisonMode={toggleComparisonMode}
+          reset={reset}
+          randomizeTiers={randomizeTiers}
+          quickRankMode={quickRankMode}
+          setQuickRankMode={setQuickRankMode}
+          headToHeadActive={headToHead.isActive}
+          headToHeadToggle={() => headToHead.isActive ? headToHead.stop() : headToHead.start()}
+          showCustomizationModal={showCustomizationModal}
+          handleExport={handleExport}
+          handleExportJSON={handleExportJSON}
+          handleImportJSON={handleImportJSON}
+          handleSave={handleSave}
+          handleLoad={handleLoad}
+          handleStatsModal={handleStatsModal}
+          takeSnapshot={takeSnapshot}
+          restoreSnapshot={restoreSnapshot}
+          clearSnapshot={clearSnapshot}
+          snapshotExists={!!snapshotRef.current}
+          showStats={showStats}
+          setShowStats={setShowStats}
+          currentTheme={currentTheme}
+          setCurrentTheme={setCurrentTheme}
+          sideMenuSide={sideMenuSide}
+          setSideMenuSide={setSideMenuSide}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          allTags={allTags}
+          activeTagFilters={activeTagFilters}
+          setActiveTagFilters={setActiveTagFilters}
+  />
 
         {/* Comparison Mode UI */}
         {comparisonState.isActive && (
-          <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-purple-500">
-            <div className="text-center mb-4">
-              <h3 className="text-xl font-bold text-purple-400">Comparison Mode Active</h3>
-              <p className="text-slate-400">Click contestants to compare them side by side</p>
-            </div>
-            
-            {comparisonState.contestants[0] || comparisonState.contestants[1] ? (
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="text-center">
-                  {comparisonState.contestants[0] ? (
-                    <div className="bg-slate-700 p-3 rounded-lg">
-                      <img src={comparisonState.contestants[0].imageUrl} alt={comparisonState.contestants[0].name} className="w-16 h-16 rounded-full mx-auto mb-2" />
-                      <div className="text-white font-semibold">{comparisonState.contestants[0].name}</div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-700/50 border-2 border-dashed border-slate-500 p-3 rounded-lg w-24 h-24 flex items-center justify-center text-slate-500">
-                      Select 1st
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center text-2xl text-purple-400">VS</div>
-                
-                <div className="text-center">
-                  {comparisonState.contestants[1] ? (
-                    <div className="bg-slate-700 p-3 rounded-lg">
-                      <img src={comparisonState.contestants[1].imageUrl} alt={comparisonState.contestants[1].name} className="w-16 h-16 rounded-full mx-auto mb-2" />
-                      <div className="text-white font-semibold">{comparisonState.contestants[1].name}</div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-700/50 border-2 border-dashed border-slate-500 p-3 rounded-lg w-24 h-24 flex items-center justify-center text-slate-500">
-                      Select 2nd
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-            
-            <div className="flex justify-center gap-2">
-              {generateComparisonAnalysis && (
-                <button 
-                  onClick={showComparisonModal}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-all"
-                >
-                  📊 View Analysis
-                </button>
-              )}
-              <button onClick={clearComparison} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all">
-                Clear
-              </button>
-            </div>
-          </div>
+          <ComparisonPanel
+            contestants={comparisonState.contestants}
+            onViewAnalysis={generateComparisonAnalysis ? showComparisonModal : undefined}
+            onClear={clearComparison}
+          />
         )}
 
         <DndContext
@@ -630,74 +532,49 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
             try { handleDragEndWithClear(); } catch {}
           }}
         >
-          <main className="space-y-2 sm:space-y-3">
-          {tierNames.map(tierName => (
-              <TierRow 
-              key={tierName} 
-              tierName={tierName} 
-              tierConfig={tierConfig[tierName]} 
-              contestants={tiers[tierName] || []} 
-              onDragOver={setDraggedOverTier} 
-              isDraggedOver={draggedOverTier === tierName} 
-              dragAccentColor={null}
-              onAnalyzeTier={handleAnalyzeTier} 
-              showStats={showStats} 
-              onDragStart={handleDragStart} 
-              onDragEnd={handleDragEndWithClear} 
-              draggedContestant={draggedContestant} 
-              onZoneClick={moveSelectedToTier}
-              quickRankMode={quickRankMode}
-              onQuickRank={handleQuickRankWithMode}
-              onSelect={comparisonState.isActive ? selectContestantForComparison : (c: Contestant) => setSelectedContestant(c)}
-              onStackForCompare={handleStackForCompare}
-              selectedContestant={selectedContestant}
-              onClearTier={clearTier}
-              highlightIds={lastMovedIds}
-              celebrateSTier={tierName === 'S' && celebrateSTier}
-            />
-          ))}
-  </main>
+          <TierGrid
+            tierNames={tierNames}
+            tierConfig={tierConfig}
+            tiers={tiers as Record<string, import('./types').Contestant[]>}
+            setDraggedOverTier={setDraggedOverTier}
+            draggedOverTier={draggedOverTier}
+            onAnalyzeTier={handleAnalyzeTier}
+            showStats={showStats}
+            handleDragStart={handleDragStart}
+            handleDragEndWithClear={handleDragEndWithClear}
+            draggedContestant={draggedContestant}
+            moveSelectedToTier={moveSelectedToTier}
+            quickRankMode={quickRankMode}
+            handleQuickRankWithMode={handleQuickRankWithMode}
+            comparisonActive={comparisonState.isActive}
+            selectContestantForComparison={selectContestantForComparison}
+            setSelectedContestant={setSelectedContestant}
+            handleStackForCompare={handleStackForCompare}
+            selectedContestant={selectedContestant}
+            clearTier={clearTier}
+            lastMovedIds={lastMovedIds}
+            celebrateSTier={celebrateSTier}
+          />
   </DndContext>
 
-        <footer className="text-center mt-8">
-          <div className="mb-4 bg-slate-800 rounded-lg p-2">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-bold text-slate-300 flex items-center gap-2">📍 Unranked Contestants
-                <span className="text-xs font-normal text-slate-400">({unrankedContestants.length} remaining)</span>
-              </h2>
-              <button
-                onClick={() => setUnrankedCollapsed(c => !c)}
-                className="text-slate-300 text-xs bg-slate-700/60 hover:bg-slate-600 px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
-                aria-expanded={!unrankedCollapsed}
-              >{unrankedCollapsed ? 'Expand' : 'Collapse'}</button>
-            </div>
-            {!unrankedCollapsed && (
-              <div className="mt-2 flex flex-wrap justify-center gap-3 min-h-[120px]">
-                {filteredUnranked.length > 0 ? filteredUnranked.map(contestant => (
-                  <ContestantCard
-                    key={contestant.id}
-                    contestant={contestant}
-                    showStats={showStats}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEndWithClear}
-                    isDragging={draggedContestant === contestant.id}
-                    quickRankMode={quickRankMode}
-                    onQuickRank={handleQuickRankWithMode}
-                    onSelect={comparisonState.isActive ? selectContestantForComparison : (c: Contestant) => setSelectedContestant(c)}
-                    onStackForCompare={handleStackForCompare}
-                    isSelected={selectedContestant?.id === contestant.id}
-                    wasConsidered={consideredIds.has(contestant.id)}
-                    
-                  />
-                )) : (
-                  <div className="flex items-center justify-center h-full text-slate-500">
-                    {unrankedContestants.length === 0 ? 'All contestants have been ranked! Great job!' : 'No matches for current search / filters'}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </footer>
+        <UnrankedPanel
+          filteredUnranked={filteredUnranked}
+          unrankedCount={unrankedContestants.length}
+          unrankedCollapsed={unrankedCollapsed}
+          setUnrankedCollapsed={setUnrankedCollapsed}
+          showStats={showStats}
+          handleDragStart={handleDragStart}
+          handleDragEndWithClear={handleDragEndWithClear}
+          draggedContestant={draggedContestant}
+          quickRankMode={quickRankMode}
+          handleQuickRankWithMode={handleQuickRankWithMode}
+          comparisonActive={comparisonState.isActive}
+          selectContestantForComparison={selectContestantForComparison}
+          setSelectedContestant={setSelectedContestant}
+          handleStackForCompare={handleStackForCompare}
+          selectedContestant={selectedContestant}
+          consideredIds={consideredIds}
+        />
       </div>
       
   {/* Mobile Components */}

@@ -42,6 +42,9 @@ export const validateTiersShape = (tiers: unknown): tiers is Tiers => {
 
 export const reorderList = <T>(list: T[], from: number, to: number): T[] => {
   if (!Array.isArray(list)) return list;
+  // Guard invalid indices & no-op moves
+  if (from === to) return list;
+  if (from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
   const copy = [...list];
   const item = copy.splice(from, 1)[0];
   copy.splice(to, 0, item);
@@ -61,8 +64,12 @@ import { normalizeRng } from '../utils';
 export const randomizeIntoTiers = (contestants: Contestant[], tierNames: string[], rng?: () => number): Tiers => {
   const rand = normalizeRng(rng);
   const n = Array.isArray(contestants) ? contestants.length : 0;
+  // If no tier names provided, keep everyone unranked (avoid NaN modulo / undefined key)
+  if (!tierNames || tierNames.length === 0) {
+    return { unranked: [...(contestants || [])] } as Tiers;
+  }
   const newTiers: Tiers = {
-    ...Object.fromEntries(tierNames.map((name) => [name, []])),
+    ...Object.fromEntries(tierNames.map((name) => [name, [] as Contestant[]])),
     unranked: []
   };
   if (!n) return newTiers;
@@ -71,17 +78,14 @@ export const randomizeIntoTiers = (contestants: Contestant[], tierNames: string[
   const arr = [...contestants];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
+    [arr[i], arr[j]] = [arr[j], arr[i]]; // swap
   }
 
   // Round-robin distribution across tiers for even spread
-  arr.forEach((c, idx) => {
+  for (let idx = 0; idx < arr.length; idx++) {
     const target = tierNames[idx % tierNames.length];
-    if (!Array.isArray(newTiers[target])) newTiers[target] = [];
-    newTiers[target].push(c);
-  });
+    newTiers[target].push(arr[idx]);
+  }
 
   return newTiers;
 };
