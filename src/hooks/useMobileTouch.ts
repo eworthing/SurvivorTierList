@@ -11,7 +11,7 @@ interface TouchState {
   isDragging: boolean;
   draggedContestant: Contestant | null;
   touchStartPos: { x: number; y: number } | null;
-  longPressTimer: number | null;
+  longPressTimer: ReturnType<typeof setTimeout> | null;
   dragPreview: { x: number; y: number } | null;
 }
 

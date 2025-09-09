@@ -9,7 +9,8 @@
   "jsx": "react-jsx",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+  "skipLibCheck": true,
+  "types": ["vitest", "@testing-library/jest-dom"]
   },
   "include": ["src", "test", "**/*.jsx"]
 }

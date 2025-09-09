@@ -1,0 +1,29 @@
+[
+  {
+    "type": "console",
+    "text": "[vite] connecting...",
+    "location": {
+      "url": "http://localhost:5173/@vite/client",
+      "lineNumber": 732,
+      "columnNumber": 8
+    }
+  },
+  {
+    "type": "console",
+    "text": "[vite] connected.",
+    "location": {
+      "url": "http://localhost:5173/@vite/client",
+      "lineNumber": 826,
+      "columnNumber": 11
+    }
+  },
+  {
+    "type": "console",
+    "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "location": {
+      "url": "http://localhost:5173/node_modules/.vite/deps/chunk-NXESFFTV.js?v=22d98b3c",
+      "lineNumber": 21608,
+      "columnNumber": 24
+    }
+  }
+]

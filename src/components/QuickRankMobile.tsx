@@ -1,9 +1,7 @@
 import React from 'react';
-import type { TierConfig } from '../types';
 
 interface QuickRankMobileProps {
   isVisible: boolean;
-  tierConfig: TierConfig;
   onTierSelect: (tierName: string) => void;
   onCancel: () => void;
   selectedContestantName?: string;
@@ -11,7 +9,6 @@ interface QuickRankMobileProps {
 
 const QuickRankMobile: React.FC<QuickRankMobileProps> = ({
   isVisible,
-  tierConfig,
   onTierSelect,
   onCancel,
   selectedContestantName
@@ -34,26 +31,20 @@ const QuickRankMobile: React.FC<QuickRankMobileProps> = ({
           )}
         </div>
         
-        {/* Tier Options */}
-        <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
-          {Object.entries(tierConfig).map(([tierName, config]) => (
-            <button
-              key={tierName}
-              onClick={() => onTierSelect(tierName)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors duration-200 hover:bg-slate-700 active:bg-slate-600 touch-manipulation"
-              style={{ backgroundColor: `${(config.hexColor || '#6b7280')}20`, borderLeft: `4px solid ${config.hexColor || '#6b7280'}` }}
-            >
-              <div 
-                className="w-4 h-4 rounded-full flex-shrink-0"
-                style={{ backgroundColor: config.hexColor || '#6b7280' }}
-              />
-              <div className="flex-1 text-left">
-                <div className="text-white font-semibold">{config.name} Tier</div>
-                <div className="text-slate-400 text-sm">{config.description}</div>
-              </div>
-              <div className="text-slate-500 text-2xl">›</div>
-            </button>
-          ))}
+        {/* Tier Options: phone-optimized 3x2 grid */}
+        <div className="p-3">
+          <div className="grid grid-cols-3 gap-2">
+            {['S','A','B','C','D','F'].map(t => (
+              <button
+                key={t}
+                onClick={() => onTierSelect(t)}
+                className="hit rounded-xl text-base font-semibold border py-3 flex items-center justify-center"
+                aria-label={`Rank ${t}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
         
         {/* Cancel Button */}
