@@ -93,13 +93,16 @@ const TierRow: React.FC<TierRowProps> = React.memo(({
       <div
         className={`
           w-24 sm:w-32 flex flex-col justify-center items-center p-3 sm:p-4 
-          text-white rounded-l-lg bg-gradient-to-br ${tierConfig.color}
+          text-white rounded-l-lg bg-gradient-to-br ${tierConfig.color !== 'dynamic-gradient' ? tierConfig.color : ''}
           cursor-pointer hover:bg-opacity-80 transition-all duration-200
           min-h-[44px] touch-manipulation
         `}
         onClick={handleZoneClick}
         data-tier-name={tierName}
-        style={{ minHeight: '44px' }}
+        style={tierConfig.color === 'dynamic-gradient' && tierConfig.hexColor ? {
+          minHeight: '44px',
+          backgroundImage: `linear-gradient(135deg, ${tierConfig.hexColor} 0%, ${tierConfig.hexColor}dd 100%)`
+        } : { minHeight: '44px' }}
       >
         <div className="relative w-full flex flex-col items-center">
           <span className="text-2xl sm:text-4xl font-extrabold">{tierConfig.name}</span>

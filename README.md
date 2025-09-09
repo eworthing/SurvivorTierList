@@ -234,6 +234,19 @@ Autosave runs on every meaningful change. Manual controls supplement it.
 * Build: `npm run build`
 * Preview: `npm run preview`
 
+### tvOS (Experimental)
+
+Capacitor does not officially generate a tvOS target. To experiment on Apple TV:
+
+1. Create a new tvOS App target in Xcode inside the existing iOS workspace.
+2. Add a build phase that copies the `dist` contents into the tvOS bundle (e.g. `cp -R ../dist/* "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"`).
+3. Embed a `WKWebView` (SwiftUI: `UIViewRepresentable`) and load `index.html` via `loadFileURL`.
+4. Remove iOS-only splash/launch storyboards from the tvOS target.
+5. Remote navigation: ensure interactive elements get `tabIndex={0}` (React) or `data-focusable="true"`; focus ring styling is applied when `body.tvos` class is present.
+6. Optional: add logic to inject `document.body.classList.add('tvos')` when the user agent contains `AppleTV`.
+
+Limitations: Native Capacitor plugins (Keyboard, SplashScreen) are skipped; dynamic import guards remain. Some gestures (drag) may feel awkward on the remote; consider adding a simplified list navigation mode for tvOS if adoption grows.
+
 ## Project structure
 
 * `index.html` – Entry + SW registration (Tailwind via CDN)
@@ -326,4 +339,29 @@ The "Considered" badge is session-only: clearing a snapshot or reloading (withou
 * Drag ghost preview customization
 * In-tier manual reorder affordance
 * Enhanced celebration variants (multi-tier milestones)
+
+## Debug helpers (local dev)
+
+Two small helper scripts were added to make dev-server testing reliable across environments where localhost may resolve differently (IPv4 vs IPv6) or where running the server in-foreground interferes with terminal commands.
+
+- `tools/dev-detach.sh` — starts the Vite dev server detached and writes logs to `/tmp/vite.log`. It binds to `127.0.0.1` by default (you can override with `DEV_HOST`). Use this when you want the server to keep running while you run other commands.
+
+	Example:
+
+	```sh
+	npm run dev:detached
+	# or
+	DEV_HOST=127.0.0.1 npm run dev:detached
+	```
+
+- `tools/dev-curl.sh` — safely curls the dev server URL found in `/tmp/vite.log`. It prefers IPv4 and falls back to IPv6 and uses a short timeout to avoid hanging.
+
+	Example:
+
+	```sh
+	npm run dev:curl
+	```
+
+These helpers are intended to be safe to call from CI or when running multiple terminal tasks; they avoid the common curl hang conditions by reading the actual bound URL from the dev-server log and forcing a short curl timeout.
+
 

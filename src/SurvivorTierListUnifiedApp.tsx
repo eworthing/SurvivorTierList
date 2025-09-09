@@ -1,7 +1,16 @@
 // SurvivorTierListUnifiedApp root component
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import './styles/tailwind.css';
+import './styles/tailwind.pcss';
 import './styles/fonts.css';
+import './styles/mobile.css';
+import { ThemeClassSentinel } from './styles/themeSentinel';
+
+// augment Window with a small runtime field used for keyboard heuristics
+declare global {
+  interface Window {
+    __lastInnerHeight?: number;
+  }
+}
 import { createRoot } from 'react-dom/client';
 // Capacitor SplashScreen: hide when the web app is ready
 import Modal from './components/Modal';
@@ -14,6 +23,7 @@ import SideQuickDropMenu from './components/SideQuickDropMenu';
 import HeadToHeadMode from './components/HeadToHeadMode';
 import { useHeadToHead } from './hooks/useHeadToHead';
 import Toasts, { ToastData } from './components/Toasts';
+import MobileActionBar from './components/MobileActionBar';
 import type { Contestant, TierConfig, UserStats } from './types';
 import * as HistoryManager from './historyManager';
 
@@ -36,11 +46,12 @@ import { createRng } from './utils'; // single import (deduplicated)
 import APP_ANIMATIONS from './styles/animations';
 import { setDragAccentColor } from './stores/uiStore';
 import { MESSAGES } from './constants/messages';
-import { DndContext, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragStartEvent, DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import AppToolbar from './components/AppToolbar';
 import ComparisonPanel from './components/ComparisonPanel';
 import UnrankedPanel from './components/UnrankedPanel';
 import TierGrid from './components/TierGrid';
+import { isTvOS } from './utils/platform';
 
 const SurvivorTierListUnifiedApp: React.FC = () => {
   const { contestantGroups } = useDataProcessing();
@@ -82,6 +93,8 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   const [sideMenuSide, setSideMenuSide] = useState<'left' | 'right'>('right');
   const [unrankedCollapsed, setUnrankedCollapsed] = useState(false);
   const [toasts, setToasts] = useState<ToastData[]>([]);
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+  const tvOS = isTvOS();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
   const [lastMovedIds, setLastMovedIds] = useState<string[]>([]);
@@ -113,6 +126,14 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
     window.addEventListener('tierlist:notify', handler as EventListener);
     return () => window.removeEventListener('tierlist:notify', handler as EventListener);
   }, [pushToast]);
+
+  // tvOS mode notice (keyboard shortcuts disabled there)
+  React.useEffect(() => {
+    if (tvOS) {
+      pushToast('tvOS mode detected');
+  try { document.body.classList.add('tvos'); } catch {}
+    }
+  }, [tvOS, pushToast]);
 
   // Custom hooks for complex functionality
   const {
@@ -255,7 +276,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
 
   // Offer restore from local on mount
   React.useEffect(() => {
-    const saved = loadFromLocal();
+  const saved = loadFromLocal();
     if (!saved) return;
     if (saved.group === selectedGroupName) {
       setTierConfig(saved.tierConfig);
@@ -279,6 +300,44 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
       }, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // watch for resize to mount mobile bar
+  React.useEffect(() => {
+    const onResize = () => setIsSmallScreen(window.innerWidth <= 640);
+    window.addEventListener('resize', onResize);
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Configure pointer-based sensors for dnd-kit to ensure touch/pointer dragging on iOS
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  // Capacitor Keyboard handlers to avoid bottom bar overlap (web fallback)
+  React.useEffect(() => {
+    const show = () => document.body.classList.add('kb');
+    const hide = () => document.body.classList.remove('kb');
+    window.addEventListener('focusin', show);
+    window.addEventListener('focusout', hide);
+    // also hide/show on resize (heuristic) and orientation changes
+    const onResize = () => {
+      const last = window.__lastInnerHeight ?? window.innerHeight;
+      if (window.innerHeight < last - 120) document.body.classList.add('kb');
+      if (window.innerHeight > last + 120) document.body.classList.remove('kb');
+      window.__lastInnerHeight = window.innerHeight;
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', hide);
+    // initialize last height
+    window.__lastInnerHeight = window.innerHeight;
+    return () => {
+      window.removeEventListener('focusin', show);
+      window.removeEventListener('focusout', hide);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', hide);
+    };
   }, []);
 
   // Manual save/load/export/import handlers
@@ -499,7 +558,9 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   }, []);
   
   return (
-  <div className={`min-h-screen ${THEMES[currentTheme].bg} text-white p-4 sm:p-6 ${isIdle ? 'stl-breathe' : ''}`}>
+  <div className={`min-h-screen ${THEMES[currentTheme].bg} text-white ${isIdle ? 'stl-breathe' : ''}`}> 
+    <ThemeClassSentinel />
+    <div className={`min-h-screen pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+56px)] px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] p-4 sm:p-6`}> 
       <Modal isOpen={modalState.isOpen} onClose={closeModal} title={modalState.title} size={modalState.size}>
         <ModalContentRenderer
           modalState={modalState}
@@ -565,6 +626,7 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
         )}
 
         <DndContext
+          sensors={sensors}
           onDragStart={(e: DragStartEvent) => {
             // forward to existing handler when starting drag (id is active.id)
             try {
@@ -663,7 +725,6 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
   {/* Mobile Components */}
       <QuickRankMobile 
         isVisible={showQuickRankMobile}
-        tierConfig={tierConfig}
         onTierSelect={handleMobileQuickRankSelect}
         onCancel={handleMobileQuickRankCancel}
         selectedContestantName={selectedForMobileRank?.name}
@@ -706,7 +767,11 @@ const SurvivorTierListUnifiedApp: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+        {isSmallScreen && (
+          <MobileActionBar onUndo={undo} onRedo={redo} onReset={reset} onExport={handleExport} />
+        )}
+  </div>
+  </div>
   );
 };
 

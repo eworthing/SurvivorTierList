@@ -29,9 +29,11 @@ type Props = {
 
 export default function TierGrid(p: Props) {
   return (
-    <main className="space-y-2 sm:space-y-3">
-      {p.tierNames.map(tierName => (
-        <TierRow
+    <main className="drag-scope space-y-2 sm:space-y-0 sm:gap-3">
+      <div className="sm:grid sm:grid-flow-col sm:auto-cols-fr sm:gap-3" style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))` }}>
+        {p.tierNames.map(tierName => (
+          <section key={tierName} className="space-y-3 sm:space-y-0">
+            <TierRow
           key={tierName}
           tierName={tierName}
           tierConfig={p.tierConfig[tierName]}
@@ -55,7 +57,9 @@ export default function TierGrid(p: Props) {
           celebrateSTier={p.celebrateSTier}
           onOpenStats={p.onOpenStats}
         />
+        </section>
       ))}
+  </div>
     </main>
   );
 }

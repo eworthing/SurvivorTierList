@@ -28,12 +28,14 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   };
 
   const handleColorChange = (tierKey: string, hexColor: string) => {
+    // Store hex; derive gradient via CSS variables instead of arbitrary Tailwind class strings.
     setLocalConfig(prev => ({
       ...prev,
       [tierKey]: {
         ...prev[tierKey],
         hexColor,
-        color: `from-[${hexColor}] to-[${hexColor}dd]` // Add slight transparency to the "to" color
+        // marker class consumed by TierRow to build inline style gradient
+        color: 'dynamic-gradient'
       }
     }));
   };

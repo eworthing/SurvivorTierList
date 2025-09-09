@@ -1,0 +1,39 @@
+/* Mobile defaults and hit-target utilities */
+html { font-size: 16px; }
+:root { --hit: 44px; }
+
+@media (max-width: 640px) {
+  h1 { font-size: clamp(20px, 5.5vw, 28px); line-height: 1.2; }
+  h2 { font-size: clamp(18px, 4.8vw, 24px); line-height: 1.25; }
+  .hit { min-height: var(--hit); min-width: var(--hit); display: inline-flex; align-items: center; justify-content: center; }
+  button.hit, .icon-btn.hit { padding: 10px; border-radius: 12px; }
+  .drag-scope { touch-action: pan-y; }
+  input, select, textarea { font-size: 16px; }
+}
+
+/* small helpers for full-height sheets */
+.sheet-full {
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+/* ensure interactive elements are easy to tap on larger viewports too */
+button.hit { min-height: var(--hit); min-width: var(--hit); }
+
+/* hide mobile bar when keyboard is visible */
+body.kb nav { transform: translateY(100%); pointer-events: none; }
+
+.background { background-color: rgba(17,24,39,1); }
+
+/* tvOS / focus navigation adjustments */
+body.tvos :focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 4px;
+  border-radius: 8px;
+  transition: outline-color 120ms ease;
+}
+
+body.tvos [data-focusable='true'] { cursor: pointer; }
+
+/* Utility to enlarge hit area for remote */
+body.tvos .focus-target { padding: 8px 10px; }
+

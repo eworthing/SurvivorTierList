@@ -1,8 +1,8 @@
-/* @vitest-environment jsdom */
+// Global matchers & jsdom configured via vite.config.ts test block
 
 import React from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, afterEach, vi, expect } from 'vitest';
 
 import AppToolbar from '../src/components/AppToolbar';
 
@@ -53,6 +53,12 @@ describe('AppToolbar', () => {
     cleanup();
     vi.clearAllMocks();
   });
+
+    it('applies Tailwind class to search input', () => {
+      render(<AppToolbar {...baseProps} />);
+      const input = screen.getByPlaceholderText('Search unranked...');
+      expect(input).toHaveClass('bg-slate-800');
+    });
 
   it('renders title and progress', () => {
     render(<AppToolbar {...baseProps} />);

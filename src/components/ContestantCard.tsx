@@ -104,66 +104,63 @@ const ContestantCard = React.memo(function ContestantCard({
       animate={isSettling ? { y: [0, -8, 0] } : { y: 0 }}
       transition={isSettling ? { duration: 0.42, ease: 'easeOut' } : { duration: 0 }}
     >
-  <div
-      role="button"
-      tabIndex={0}
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeaveCard}
-  onClick={handleClick}
-  onMouseEnter={handleMouseEnter}
-  onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchMove}
-      onKeyDown={handleKeyDown}
-  className={`
-    relative w-24 h-32 sm:w-28 sm:h-36 md:w-24 md:h-32 rounded-lg overflow-hidden shadow-lg cursor-pointer 
-    transform hover:scale-105 transition-transform duration-200 
-    focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900
-    ${isDragging || isDraggingMobile ? 'opacity-50 scale-95' : 'opacity-100'} 
-    ${isSelected ? 'ring-2 ring-sky-400' : ''}
-    ${quickRankMode ? 'ring-2 ring-green-400' : ''}
-  ${showTiers ? 'ring-2 ring-yellow-400' : ''}
-  ${wasConsidered ? 'border-2 border-dashed border-sky-400' : ''}
-  ${isSettling ? 'animate-stl-settle' : ''}
-    touch-manipulation select-none
-  `}
-      style={{ 
-        minHeight: '44px', // iOS accessibility guideline
-        minWidth: '44px',
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale || 1})` : undefined,
-        transition: transition || undefined,
-      }}
-      aria-label={`${contestant.name} from Season ${contestant.season}${quickRankMode ? '. Press 1-6 to rank quickly' : ''}${showTiers ? '. Quick rank active - tap a tier' : ''}`}
-      title={quickRankMode ? 'Press 1-6 to rank: 1=S, 2=A, 3=B, 4=C, 5=D, 6=F' : `${contestant.name} - Season ${contestant.season}`}
-    >
-      <img 
-        src={imgSrc} 
-        onError={handleImageError} 
-        alt={`${contestant.name} from Survivor Season ${contestant.season}`}
-        loading="lazy" 
-        className="w-full h-full object-cover" 
-      />
+  <button
+        type="button"
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeaveCard}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onKeyDown={handleKeyDown}
+        aria-label={`Open ${contestant.name} from Season ${contestant.season}${quickRankMode ? '. Quick rank active' : ''}`}
+        title={quickRankMode ? 'Press 1-6 to rank: 1=S, 2=A, 3=B, 4=C, 5=D, 6=F' : `${contestant.name} - Season ${contestant.season}`}
+  data-focusable="true"
+  tabIndex={0}
+  className={`hit group relative rounded-xl shadow-sm overflow-hidden touch-manipulation
+          ${isDragging || isDraggingMobile ? 'opacity-50 scale-95' : 'opacity-100'}
+          ${isSelected ? 'ring-2 ring-sky-400' : ''}
+          ${quickRankMode ? 'ring-2 ring-green-400' : ''}
+          ${showTiers ? 'ring-2 ring-yellow-400' : ''}
+          ${wasConsidered ? 'border-2 border-dashed border-sky-400' : ''}
+          ${isSettling ? 'animate-stl-settle' : ''}
+          select-none cursor-pointer transform hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900
+        `}
+        style={{
+          transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale || 1})` : undefined,
+          transition: transition || undefined,
+        }}
+      >
+        <img
+          src={imgSrc}
+          onError={handleImageError}
+          alt={`${contestant.name} from Survivor Season ${contestant.season}`}
+          loading="lazy"
+          className="block object-cover w-[88px] h-[88px] sm:w-[96px] sm:h-[96px]"
+          width={96}
+          height={96}
+        />
       {/* Hover peek overlay */}
     {isPeeking && (
         <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-2 rounded-b-lg">
           {contestant.status || `Season ${contestant.season}`} 
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-      <div className="absolute bottom-0 left-0 p-2">
-        <p className="text-white text-sm font-bold leading-tight">{contestant.name}</p>
-        <p className="text-slate-300 text-xs">{`S${contestant.season}`}</p>
-    {showStats && (
-          <div className="text-xs text-slate-300 mt-1">
-      {strategy && <span>STR: {strategy}</span>}
-      {social && <span className="ml-1">SOC: {social}</span>}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <div className="absolute bottom-0 inset-x-0 bg-black/45 backdrop-blur text-white text-[13px] leading-5 px-2 py-1 truncate">
+          {contestant.name}
+        </div>
+        {showStats && (
+          <div className="absolute bottom-10 left-2 text-xs text-slate-300 mt-1">
+            {strategy && <span>STR: {strategy}</span>}
+            {social && <span className="ml-1">SOC: {social}</span>}
           </div>
         )}
-      </div>
       
       {quickRankMode && (
         <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
@@ -219,7 +216,7 @@ const ContestantCard = React.memo(function ContestantCard({
           </button>
         </div>
       )}
-  </div>
+  </button>
   </motion.div>
   );
 });

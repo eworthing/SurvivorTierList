@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Survivor Tier Ranking Pro</title>
 
     <!-- PWA Meta -->
@@ -21,8 +21,7 @@
     <link rel="preload" href="/survivor-data.js" as="script" />
     <script src="/survivor-data.js"></script>
 
-    <!-- Tailwind via CDN (kept for simplicity) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind is built via PostCSS in the dev/build pipeline -->
 
     <style>
       .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

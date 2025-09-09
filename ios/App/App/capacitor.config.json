@@ -2,18 +2,6 @@
 	"appId": "com.eworthing.survivortierlist",
 	"appName": "Survivor Tier List",
 	"webDir": "dist",
-	"plugins": {
-		"SplashScreen": {
-			"launchShowDuration": 1200,
-			"backgroundColor": "#0f172a",
-			"androidScaleType": "CENTER_CROP",
-			"showSpinner": false
-		}
-	},
-	"packageClassList": [
-		"FilesystemPlugin",
-		"SharePlugin",
-		"SplashScreenPlugin",
-		"StatusBarPlugin"
-	]
+	"bundledWebRuntime": false,
+	"packageClassList": []
 }

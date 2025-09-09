@@ -1,0 +1,21 @@
+const { chromium } = require('playwright');
+(async () => {
+  const url = process.env.SMOKE_URL || 'http://localhost:5173/';
+  console.log('Checking styles at', url);
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 20000 });
+  await page.waitForTimeout(500);
+  const bodyClass = await page.evaluate(() => document.body.className);
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundImage || getComputedStyle(document.body).backgroundColor);
+  const styleCount = await page.evaluate(() => document.querySelectorAll('style').length);
+  const firstStyle = await page.evaluate(() => { const s = document.querySelector('style'); return s ? s.innerHTML.slice(0, 400) : null; });
+  const rootInner = await page.evaluate(() => document.getElementById('root')?.innerHTML?.slice(0,500) ?? '');
+  console.log('body.className:', bodyClass);
+  console.log('body background:', bg);
+  console.log('style tags:', styleCount);
+  console.log('first style (snippet):', firstStyle ? firstStyle.replace(/\n/g, '\\n') : 'none');
+  console.log('root innerHTML snippet:', rootInner.replace(/\n/g, '\\n'));
+  await browser.close();
+})();
